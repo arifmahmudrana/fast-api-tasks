@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+alembic
+python-dotenv
+mysqlclient
+pytest
+httpx
+pytest-asyncio
+passlib[bcrypt]
+python-jose
+python-multipart
+pytest-cov

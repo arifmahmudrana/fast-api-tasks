@@ -1,0 +1,17 @@
+[run]
+branch = True
+source =
+    app
+    tests
+omit =
+    */__init__.py
+    */__pycache__/*
+    */migrations/*
+    alembic/*
+
+[report]
+show_missing = True
+skip_covered = True
+
+[html]
+directory = htmlcov

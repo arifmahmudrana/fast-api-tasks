@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# macOS
+.DS_Store
+
+# Alembic
+alembic/versions/__pycache__/
+
+# Test, coverage, and reports
+htmlcov/
+.coverage
+.cache
+pytest_cache/
+
+# Environment files
+.env
+.env.*
+
+# Docker
+*.pid
+*.log
+db_data/
+
+# Misc
+*.sqlite3
+*.db
+*.bak
+*.swp
+*.swo
+
+# Ignore migrations cache
+alembic/__pycache__/
+
+# Ignore compiled files
+*.so
+
+# Ignore Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Ignore all cache
+**/__pycache__/
