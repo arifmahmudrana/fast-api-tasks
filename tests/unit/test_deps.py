@@ -1,11 +1,7 @@
 # tests/unit/test_deps.py
 import pytest
-from fastapi import HTTPException, Depends
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
-from jose import JWTError, jwt
-from unittest.mock import MagicMock, patch
-
+from fastapi import HTTPException
+from jose import JWTError
 from app.deps import get_db, get_current_user
 from app import crud
 
@@ -17,103 +13,100 @@ TEST_TOKEN = "test-token"
 TEST_PAYLOAD = {"sub": TEST_EMAIL}
 
 
-@pytest.fixture
-def mock_db():
-    db = MagicMock(spec=Session)
-    return db
+def test_get_db(mocker):
+    # Mock the database session
+    mock_session_local = mocker.patch('app.database.SessionLocal')
+    mock_db = mocker.MagicMock()
+    mock_session_local.return_value = mock_db
 
-
-@pytest.fixture
-def mock_oauth2_scheme():
-    scheme = MagicMock(spec=OAuth2PasswordBearer)
-    return scheme
-
-
-def test_get_db():
     # Test that get_db yields a session and closes it
-    with patch('app.database.SessionLocal') as mock_session_local:
-        mock_db = MagicMock()
-        mock_session_local.return_value = mock_db
+    generator = get_db()
+    db = next(generator)
 
-        generator = get_db()
-        db = next(generator)
+    assert db == mock_db
+    # Test that the db is closed after use
+    try:
+        next(generator)
+    except StopIteration:
+        pass
 
-        assert db == mock_db
-        # Test that the db is closed after use
-        try:
-            next(generator)
-        except StopIteration:
-            pass
-
-        mock_db.close.assert_called_once()
+    mock_db.close.assert_called_once()
 
 
-@patch('app.crud.SECRET_KEY', TEST_SECRET_KEY)
-@patch('app.crud.ALGORITHM', TEST_ALGORITHM)
-def test_get_current_user_valid_token(mock_db, mock_oauth2_scheme):
-    # Test with valid token and existing user
-    mock_oauth2_scheme.return_value = TEST_TOKEN
+def test_get_current_user_valid_token(mocker):
+    # Setup mocks
+    mocker.patch.object(crud, 'SECRET_KEY', TEST_SECRET_KEY)
+    mocker.patch.object(crud, 'ALGORITHM', TEST_ALGORITHM)
 
-    with patch('jwt.decode') as mock_jwt_decode, \
-            patch('app.crud.get_user_by_email') as mock_get_user:
+    # Patch the jwt.decode call WHERE IT'S USED (in deps.py)
+    mock_jwt_decode = mocker.patch(
+        'app.deps.jwt.decode', return_value=TEST_PAYLOAD)
 
-        # Setup mocks
-        mock_jwt_decode.return_value = TEST_PAYLOAD
-        mock_user = MagicMock()
-        mock_get_user.return_value = mock_user
+    mock_get_user = mocker.patch('app.crud.get_user_by_email')
+    mock_user = mocker.MagicMock()
+    mock_get_user.return_value = mock_user
 
-        # Call the function
-        result = get_current_user(token=TEST_TOKEN, db=mock_db)
+    # Mock DB dependency
+    mock_db = mocker.MagicMock()
 
-        # Assertions
-        mock_jwt_decode.assert_called_once_with(
-            TEST_TOKEN, TEST_SECRET_KEY, algorithms=[TEST_ALGORITHM]
-        )
-        mock_get_user.assert_called_once_with(mock_db, email=TEST_EMAIL)
-        assert result == mock_user
+    # Call the function
+    result = get_current_user(token=TEST_TOKEN, db=mock_db)
 
-
-@patch('app.crud.SECRET_KEY', TEST_SECRET_KEY)
-@patch('app.crud.ALGORITHM', TEST_ALGORITHM)
-def test_get_current_user_invalid_token(mock_db):
-    # Test with invalid token (JWTError)
-    with patch('jwt.decode') as mock_jwt_decode:
-        mock_jwt_decode.side_effect = JWTError("Invalid token")
-
-        with pytest.raises(HTTPException) as exc_info:
-            get_current_user(token="invalid-token", db=mock_db)
-
-        assert exc_info.value.status_code == 401
-        assert exc_info.value.detail == "Could not validate credentials"
+    # Assertions
+    mock_jwt_decode.assert_called_once_with(
+        TEST_TOKEN, TEST_SECRET_KEY, algorithms=[TEST_ALGORITHM]
+    )
+    mock_get_user.assert_called_once_with(mock_db, email=TEST_EMAIL)
+    assert result == mock_user
 
 
-@patch('app.crud.SECRET_KEY', TEST_SECRET_KEY)
-@patch('app.crud.ALGORITHM', TEST_ALGORITHM)
-def test_get_current_user_missing_email(mock_db):
-    # Test with token missing email
-    with patch('jwt.decode') as mock_jwt_decode:
-        mock_jwt_decode.return_value = {"sub": None}
+def test_get_current_user_invalid_token(mocker):
+    # Setup mocks
+    mocker.patch.object(crud, 'SECRET_KEY', TEST_SECRET_KEY)
+    mocker.patch.object(crud, 'ALGORITHM', TEST_ALGORITHM)
 
-        with pytest.raises(HTTPException) as exc_info:
-            get_current_user(token=TEST_TOKEN, db=mock_db)
+    mocker.patch('app.deps.jwt.decode', side_effect=JWTError("Invalid token"))
 
-        assert exc_info.value.status_code == 401
-        assert exc_info.value.detail == "Could not validate credentials"
+    # Mock DB dependency
+    mock_db = mocker.MagicMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_user(token="invalid-token", db=mock_db)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Could not validate credentials"
 
 
-@patch('app.crud.SECRET_KEY', TEST_SECRET_KEY)
-@patch('app.crud.ALGORITHM', TEST_ALGORITHM)
-def test_get_current_user_nonexistent_user(mock_db):
-    # Test with valid token but user doesn't exist in DB
-    with patch('jwt.decode') as mock_jwt_decode, \
-            patch('app.crud.get_user_by_email') as mock_get_user:
+def test_get_current_user_missing_email(mocker):
+    # Setup mocks
+    mocker.patch.object(crud, 'SECRET_KEY', TEST_SECRET_KEY)
+    mocker.patch.object(crud, 'ALGORITHM', TEST_ALGORITHM)
 
-        mock_jwt_decode.return_value = TEST_PAYLOAD
-        mock_get_user.return_value = None
+    mocker.patch('app.deps.jwt.decode', return_value={"sub": None})
 
-        with pytest.raises(HTTPException) as exc_info:
-            get_current_user(token=TEST_TOKEN, db=mock_db)
+    # Mock DB dependency
+    mock_db = mocker.MagicMock()
 
-        assert exc_info.value.status_code == 401
-        assert exc_info.value.detail == "Could not validate credentials"
-        mock_get_user.assert_called_once_with(mock_db, email=TEST_EMAIL)
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_user(token=TEST_TOKEN, db=mock_db)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Could not validate credentials"
+
+
+def test_get_current_user_nonexistent_user(mocker):
+    # Setup mocks
+    mocker.patch.object(crud, 'SECRET_KEY', TEST_SECRET_KEY)
+    mocker.patch.object(crud, 'ALGORITHM', TEST_ALGORITHM)
+
+    mocker.patch('app.deps.jwt.decode', return_value=TEST_PAYLOAD)
+    mocker.patch('app.crud.get_user_by_email', return_value=None)
+
+    # Mock DB dependency
+    mock_db = mocker.MagicMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_user(token=TEST_TOKEN, db=mock_db)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Could not validate credentials"
