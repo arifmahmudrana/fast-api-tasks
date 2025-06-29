@@ -1,5 +1,5 @@
 from typing import Optional
-from pymongo import ASCENDING, DESCENDING, AsyncMongoClient
+from pymongo import AsyncMongoClient, ASCENDING, DESCENDING
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 import os
 from dotenv import load_dotenv
@@ -36,7 +36,7 @@ async def connect_to_mongo():
         await mongo_client.admin.command('ping')
         print("Successfully connected to MongoDB")
 
-        # Initialize database and collection
+        # Initialize database and collections
         db = mongo_client[MONGODB_DB]
         tasks_collection = db["tasks"]
 
@@ -57,21 +57,37 @@ async def disconnect_from_mongo():
         print("Disconnected from MongoDB")
 
 
-# Ensure indexes
 async def ensure_indexes():
     """Ensure MongoDB indexes"""
-    if tasks_collection == None:
+    if tasks_collection is None:
         print("Tasks collection not initialized, skipping index creation")
         return
 
     try:
         print("Ensuring MongoDB indexes...")
+
+        # Create indexes for tasks collection
         await tasks_collection.create_index([("user_id", ASCENDING)])
         await tasks_collection.create_index([("created_at", DESCENDING)])
         await tasks_collection.create_index([("updated_at", DESCENDING)])
         await tasks_collection.create_index([("deleted_at", DESCENDING)])
         await tasks_collection.create_index([("completed_at", DESCENDING)])
+
+        # Compound index for efficient queries
+        await tasks_collection.create_index([
+            ("user_id", ASCENDING),
+            ("deleted_at", ASCENDING)
+        ])
+
         print("MongoDB indexes created successfully")
     except Exception as e:
         print(f"Error creating indexes: {e}")
         # Don't raise the error as this shouldn't stop the application
+
+
+def get_tasks_collection():
+    """Get tasks collection with error handling"""
+    if tasks_collection is None:
+        raise RuntimeError(
+            "Tasks collection not initialized. Make sure MongoDB connection is established.")
+    return tasks_collection
