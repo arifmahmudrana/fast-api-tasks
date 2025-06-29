@@ -277,12 +277,13 @@ class TestUpdateTask(TestTaskBase):
         mocker.patch('app.routers.tasks.get_tasks_collection',
                      return_value=mock_collection)
 
+        id = ObjectId("507f1f77bcf86cd799439011")
         # Act
-        result = await update_task("507f1f77bcf86cd799439011", task_update, mock_user)
+        result = await update_task(task_update, id, mock_user)
 
         # Assert
         assert isinstance(result, TaskInDB)
-        assert result.id == "507f1f77bcf86cd799439011"
+        assert result.id == str(id)
         assert result.title == "Updated Task"
 
         # Verify update call
@@ -291,7 +292,7 @@ class TestUpdateTask(TestTaskBase):
 
         # Check filter
         expected_filter = {
-            "_id": ObjectId("507f1f77bcf86cd799439011"),
+            "_id": id,
             "user_id": 1,
             "deleted_at": None
         }
@@ -315,7 +316,7 @@ class TestUpdateTask(TestTaskBase):
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
-            await update_task("507f1f77bcf86cd799439011", task_update, mock_user)
+            await update_task(task_update, ObjectId("507f1f77bcf86cd799439011"), mock_user)
 
         assert exc_info.value.status_code == 404
         assert exc_info.value.detail == "Task not found"
@@ -344,7 +345,7 @@ class TestUpdateTask(TestTaskBase):
                      return_value=mock_collection)
 
         # Act
-        await update_task("507f1f77bcf86cd799439011", task_update, mock_user)
+        await update_task(task_update, ObjectId("507f1f77bcf86cd799439011"), mock_user)
 
         # Assert
         call_args = mock_collection.find_one_and_update.call_args[0][1]["$set"]
