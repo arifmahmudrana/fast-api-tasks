@@ -2,7 +2,7 @@
 import pytest
 import sys
 import os
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 # Add the app directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
