@@ -158,7 +158,12 @@ class TestListTasks(TestTaskBase):
         # Mock async iteration
         mock_cursor.__aiter__.return_value = iter(mock_tasks_data)
 
-        mock_collection.find.return_value.sort.return_value.skip.return_value.limit.return_value = mock_cursor
+        # Fix: Mock the entire chain of method calls properly
+        mock_find = mock_collection.find.return_value
+        mock_sort = mock_find.sort.return_value
+        mock_skip = mock_sort.skip.return_value
+        mock_skip.limit.return_value = mock_cursor
+
         mock_collection.count_documents.return_value = 2
 
         mocker.patch('app.routers.tasks.get_tasks_collection',
@@ -189,7 +194,12 @@ class TestListTasks(TestTaskBase):
         mock_cursor = mocker.AsyncMock()
         mock_cursor.__aiter__.return_value = iter(mock_tasks_data[:1])
 
-        mock_collection.find.return_value.sort.return_value.skip.return_value.limit.return_value = mock_cursor
+        # Fix: Mock the entire chain of method calls properly
+        mock_find = mock_collection.find.return_value
+        mock_sort = mock_find.sort.return_value
+        mock_skip = mock_sort.skip.return_value
+        mock_skip.limit.return_value = mock_cursor
+
         mock_collection.count_documents.return_value = 5
 
         mocker.patch('app.routers.tasks.get_tasks_collection',
@@ -204,10 +214,8 @@ class TestListTasks(TestTaskBase):
         assert result.total == 5
 
         # Verify pagination calculation (skip = (page - 1) * size = 1)
-        query_chain = mock_collection.find.return_value.sort.return_value.skip.return_value
-        mock_collection.find.return_value.sort.return_value.skip.assert_called_once_with(
-            1)
-        query_chain.limit.assert_called_once_with(1)
+        mock_sort.skip.assert_called_once_with(1)
+        mock_skip.limit.assert_called_once_with(1)
 
 
 class TestGetTask(TestTaskBase):
@@ -314,12 +322,17 @@ class TestUpdateTask(TestTaskBase):
     async def test_update_task_uncomplete(self, mocker, mock_user, mock_now):
         # Arrange
         task_update = TaskUpdate(completed=False)
+        # Fix: Include all required fields for TaskInDB
         mock_updated_task = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
             "user_id": 1,
             "title": "Test Task",
+            "description": "Test Description",  # Add missing description
+            # Add missing created_at
+            "created_at": datetime(2023, 1, 1, tzinfo=UTC),
             "completed_at": None,
-            "updated_at": mock_now
+            "updated_at": mock_now,
+            "deleted_at": None
         }
 
         mock_collection = mocker.AsyncMock()
@@ -391,8 +404,19 @@ class TestMarkComplete(TestTaskBase):
     """Test cases for mark_complete endpoint"""
 
     @pytest.mark.asyncio
-    async def test_mark_complete_success(self, mocker, mock_user, mock_completed_task, mock_now):
-        # Arrange
+    async def test_mark_complete_success(self, mocker, mock_user, mock_now):
+        # Fix: Use mock_now for completed_at to match what the function will set
+        mock_completed_task = {
+            "_id": ObjectId("507f1f77bcf86cd799439011"),
+            "user_id": 1,
+            "title": "Test Task",
+            "description": "Test Description",
+            "created_at": datetime(2023, 1, 1, tzinfo=UTC),
+            "updated_at": mock_now,
+            "completed_at": mock_now,  # Changed to use mock_now
+            "deleted_at": None
+        }
+
         mock_collection = mocker.AsyncMock()
         mock_collection.find_one_and_update.return_value = mock_completed_task
 

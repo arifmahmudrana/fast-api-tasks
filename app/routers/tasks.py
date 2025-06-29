@@ -1,3 +1,4 @@
+# app/routers/tasks.py
 from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, UTC
 from bson import ObjectId
@@ -72,7 +73,7 @@ async def update_task(
 ):
     """Update a task for the authenticated user"""
     user_id = current_user.id
-    update = {k: v for k, v in task.dict(
+    update = {k: v for k, v in task.model_dump(
         exclude_unset=True).items() if v is not None}
     update["updated_at"] = datetime.now(UTC)
     if "completed" in update:
