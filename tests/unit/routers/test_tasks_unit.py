@@ -152,19 +152,17 @@ class TestListTasks(TestTaskBase):
     @pytest.mark.asyncio
     async def test_list_tasks_success(self, mocker, mock_user, mock_tasks_data):
         # Arrange
-        mock_collection = mocker.AsyncMock()
+        mock_collection = mocker.MagicMock()  # Changed from AsyncMock to MagicMock
         mock_cursor = mocker.AsyncMock()
 
         # Mock async iteration
         mock_cursor.__aiter__.return_value = iter(mock_tasks_data)
 
-        # Fix: Mock the entire chain of method calls properly
-        mock_find = mock_collection.find.return_value
-        mock_sort = mock_find.sort.return_value
-        mock_skip = mock_sort.skip.return_value
-        mock_skip.limit.return_value = mock_cursor
+        # Mock the method chain: find().sort().skip().limit()
+        mock_collection.find.return_value.sort.return_value.skip.return_value.limit.return_value = mock_cursor
 
-        mock_collection.count_documents.return_value = 2
+        # Mock count_documents as async
+        mock_collection.count_documents = mocker.AsyncMock(return_value=2)
 
         mocker.patch('app.routers.tasks.get_tasks_collection',
                      return_value=mock_collection)
@@ -190,17 +188,15 @@ class TestListTasks(TestTaskBase):
     @pytest.mark.asyncio
     async def test_list_tasks_with_pagination(self, mocker, mock_user, mock_tasks_data):
         # Arrange
-        mock_collection = mocker.AsyncMock()
+        mock_collection = mocker.MagicMock()  # Changed from AsyncMock to MagicMock
         mock_cursor = mocker.AsyncMock()
         mock_cursor.__aiter__.return_value = iter(mock_tasks_data[:1])
 
-        # Fix: Mock the entire chain of method calls properly
-        mock_find = mock_collection.find.return_value
-        mock_sort = mock_find.sort.return_value
-        mock_skip = mock_sort.skip.return_value
-        mock_skip.limit.return_value = mock_cursor
+        # Mock the method chain: find().sort().skip().limit()
+        mock_collection.find.return_value.sort.return_value.skip.return_value.limit.return_value = mock_cursor
 
-        mock_collection.count_documents.return_value = 5
+        # Mock count_documents as async
+        mock_collection.count_documents = mocker.AsyncMock(return_value=5)
 
         mocker.patch('app.routers.tasks.get_tasks_collection',
                      return_value=mock_collection)
@@ -213,9 +209,15 @@ class TestListTasks(TestTaskBase):
         assert result.size == 1
         assert result.total == 5
 
-        # Verify pagination calculation (skip = (page - 1) * size = 1)
-        mock_sort.skip.assert_called_once_with(1)
-        mock_skip.limit.assert_called_once_with(1)
+        # Verify method calls in the chain
+        mock_collection.find.assert_called_once_with(
+            {"user_id": 1, "deleted_at": None})
+        mock_collection.find.return_value.sort.assert_called_once_with(
+            "created_at", -1)
+        mock_collection.find.return_value.sort.return_value.skip.assert_called_once_with(
+            1)
+        mock_collection.find.return_value.sort.return_value.skip.return_value.limit.assert_called_once_with(
+            1)
 
 
 class TestGetTask(TestTaskBase):
