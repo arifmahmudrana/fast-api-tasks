@@ -8,8 +8,9 @@ pytest
 httpx
 pytest-asyncio
 passlib[bcrypt]
-python-jose
+python-jose[cryptography]
 python-multipart
 pytest-cov
 motor
 pymongo
+pytest-mock
