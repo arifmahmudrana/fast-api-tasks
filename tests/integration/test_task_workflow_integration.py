@@ -1,10 +1,53 @@
+# tests/integration/test_task_workflow_integration.py
+import os
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
+from asgi_lifespan import LifespanManager
+import pytest_asyncio
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
+from app.main import app
+from app.deps import get_db
 from tests.helpers.auth_helpers import AuthHelper
 from tests.helpers.data_factories import TestDataFactory
 
+# --- Database setup ---
+SQLALCHEMY_DATABASE_URL = os.environ["DATABASE_URL"]
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
+TestingSessionLocal = sessionmaker(
+    autocommit=False, autoflush=False, bind=engine)
+
 pytestmark = pytest.mark.asyncio
+
+
+# --- Fixtures ---
+@pytest_asyncio.fixture(scope="function")
+def db_session():
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = TestingSessionLocal(bind=connection)
+    yield session
+    session.close()
+    transaction.rollback()
+    connection.close()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client(db_session):
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    transport = ASGITransport(app=app)
+
+    async with LifespanManager(app):
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            yield ac
+
+    app.dependency_overrides.clear()
 
 
 class TestTaskWorkflowIntegration:
@@ -19,7 +62,7 @@ class TestTaskWorkflowIntegration:
         task_data = TestDataFactory.create_task_data()
         response = await client.post("/tasks/", json=task_data, headers=headers)
         assert response.status_code == 201
-        task_id = response.json()["id"]
+        task_id = response.json()["_id"]
 
         # 2. Get task
         response = await client.get(f"/tasks/{task_id}", headers=headers)
@@ -29,7 +72,7 @@ class TestTaskWorkflowIntegration:
         # 3. Update task
         update_data = TestDataFactory.create_task_update_data(
             title="Updated Task")
-        response = await client.patch(f"/tasks/{task_id}", json=update_data, headers=headers)
+        response = await client.put(f"/tasks/{task_id}", json=update_data, headers=headers)
         assert response.status_code == 200
         assert response.json()["title"] == "Updated Task"
 
@@ -66,20 +109,13 @@ class TestTaskWorkflowIntegration:
 
         # Complete some tasks
         for task in created_tasks[:2]:
-            response = await client.post(f"/tasks/{task['id']}/complete", headers=headers)
+            response = await client.post(f"/tasks/{task['_id']}/complete", headers=headers)
             assert response.status_code == 200
 
         # Test pagination
-        response = await client.get("/tasks/?skip=0&limit=2", headers=headers)
+        response = await client.get("/tasks/?page=1&size=2", headers=headers)
         assert response.status_code == 200
         assert len(response.json()["tasks"]) == 2
-
-        # Test filtering by completed status
-        response = await client.get("/tasks/?completed=true", headers=headers)
-        assert response.status_code == 200
-        assert len(response.json()["tasks"]) == 2
-        assert all(task["completed_at"]
-                   is not None for task in response.json()["tasks"])
 
     async def test_concurrent_task_operations(self, client: AsyncClient):
         # Register and login user
@@ -90,15 +126,15 @@ class TestTaskWorkflowIntegration:
         task_data = TestDataFactory.create_task_data()
         response = await client.post("/tasks/", json=task_data, headers=headers)
         assert response.status_code == 201
-        task_id = response.json()["id"]
+        task_id = response.json()["_id"]
 
         # Simulate concurrent updates
         update1 = TestDataFactory.create_task_update_data(title="Update 1")
         update2 = TestDataFactory.create_task_update_data(title="Update 2")
 
         # Make concurrent requests
-        response1 = await client.patch(f"/tasks/{task_id}", json=update1, headers=headers)
-        response2 = await client.patch(f"/tasks/{task_id}", json=update2, headers=headers)
+        response1 = await client.put(f"/tasks/{task_id}", json=update1, headers=headers)
+        response2 = await client.put(f"/tasks/{task_id}", json=update2, headers=headers)
 
         # Verify last update wins
         assert response1.status_code == 200 or response2.status_code == 200

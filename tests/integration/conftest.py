@@ -1,4 +1,7 @@
+# tests/integration/conftest.py
+from pymongo import AsyncMongoClient
 import pytest
+import pytest_asyncio
 from sqlalchemy import create_engine, text
 import os
 
@@ -27,3 +30,17 @@ def setup_database():
     with admin_engine.connect() as conn:
         conn.execution_options(isolation_level="AUTOCOMMIT")
         conn.execute(text(f"DROP DATABASE IF EXISTS {db_name}"))
+
+
+# MongoDB cleanup before/after each test
+MONGODB_URL = os.getenv("MONGODB_URL")
+MONGODB_DB = os.getenv("MONGODB_DB")
+
+
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def clear_mongo_db():
+    client = AsyncMongoClient(MONGODB_URL)
+    await client.drop_database(MONGODB_DB)  # drop before
+    yield
+    await client.drop_database(MONGODB_DB)  # drop after
+    await client.close()
