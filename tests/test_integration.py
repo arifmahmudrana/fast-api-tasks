@@ -1,4 +1,3 @@
-import tests.setuptest  # noqa: F401
 from fastapi.testclient import TestClient
 from app.main import app
 from app.deps import get_db

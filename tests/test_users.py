@@ -1,4 +1,3 @@
-import tests.setuptest  # noqa: F401
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import create_engine
 from app.deps import get_db
