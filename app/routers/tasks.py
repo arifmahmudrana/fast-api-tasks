@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from app.schemas_task import TaskCreate, TaskUpdate, TaskInDB, TaskList
 from app.mongo import tasks_collection
-from app.schemas import schemas
+import app.schemas as schemas
 import app.deps as deps
 
 
