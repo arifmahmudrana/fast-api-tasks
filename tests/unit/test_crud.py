@@ -35,6 +35,15 @@ class TestCrudFunctions:
         user.hashed_password = "$2b$12$hashedpassword"
         return user
 
+    @pytest.fixture
+    def mock_user_model(self):
+        """Mock User model - moved from conftest.py"""
+        mock_user = Mock()
+        mock_user.id = 1
+        mock_user.email = "test@example.com"
+        mock_user.hashed_password = "$2b$12$test_hash"
+        return mock_user
+
 
 class TestGetUserByEmail(TestCrudFunctions):
     """Tests for get_user_by_email function"""
