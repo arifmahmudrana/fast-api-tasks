@@ -1,28 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, timezone
 from bson import ObjectId
 from app.schemas_task import TaskCreate, TaskUpdate, TaskInDB, TaskList
 from app.mongo import tasks_collection
-from fastapi import BackgroundTasks
-from fastapi.security import OAuth2PasswordBearer
-from app.deps import get_db
+from app.schemas import schemas
+import app.deps as deps
+
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
-# Dummy user_id extraction for now (replace with real auth)
-
-
-def get_current_user_id():
-    return "demo-user-id"  # Replace with real user id from JWT
-
 
 @router.post("/", response_model=TaskInDB, status_code=201)
-async def create_task(task: TaskCreate):
-    user_id = get_current_user_id()
+async def create_task(
+    task: TaskCreate,
+    current_user: schemas.User = Depends(deps.get_current_user)
+):
+    """Create a new task for the authenticated user"""
     now = datetime.now(timezone.utc)
     doc = {
-        "user_id": user_id,
+        "user_id": current_user.id,
         "title": task.title,
         "description": task.description,
         "created_at": now,
@@ -36,8 +32,13 @@ async def create_task(task: TaskCreate):
 
 
 @router.get("/", response_model=TaskList)
-async def list_tasks(page: int = 1, size: int = 10):
-    user_id = get_current_user_id()
+async def list_tasks(
+    page: int = 1,
+    size: int = 10,
+    current_user: schemas.User = Depends(deps.get_current_user)
+):
+    """Get all tasks for the authenticated user"""
+    user_id = current_user.id
     skip = (page - 1) * size
     cursor = tasks_collection.find({"user_id": user_id, "deleted_at": None}).sort(
         "created_at", -1).skip(skip).limit(size)
@@ -47,8 +48,12 @@ async def list_tasks(page: int = 1, size: int = 10):
 
 
 @router.get("/{task_id}", response_model=TaskInDB)
-async def get_task(task_id: str):
-    user_id = get_current_user_id()
+async def get_task(
+    task_id: str,
+    current_user: schemas.User = Depends(deps.get_current_user)
+):
+    """Get a specific task for the authenticated user"""
+    user_id = current_user.id
     doc = await tasks_collection.find_one({"_id": ObjectId(task_id), "user_id": user_id, "deleted_at": None})
     if not doc:
         raise HTTPException(404, "Task not found")
@@ -57,14 +62,19 @@ async def get_task(task_id: str):
 
 
 @router.put("/{task_id}", response_model=TaskInDB)
-async def update_task(task_id: str, task: TaskUpdate):
-    user_id = get_current_user_id()
+async def update_task(
+    task_id: str,
+    task: TaskUpdate,
+    current_user: schemas.User = Depends(deps.get_current_user)
+):
+    """Update a task for the authenticated user"""
+    user_id = current_user.id
     update = {k: v for k, v in task.dict(
         exclude_unset=True).items() if v is not None}
-    update["updated_at"] = datetime.utcnow()
+    update["updated_at"] = datetime.now(timezone.utc)
     if "completed" in update:
-        update["completed_at"] = datetime.utcnow(
-        ) if update.pop("completed") else None
+        update["completed_at"] = datetime.now(
+            timezone.utc) if update.pop("completed") else None
     result = await tasks_collection.find_one_and_update(
         {"_id": ObjectId(task_id), "user_id": user_id, "deleted_at": None},
         {"$set": update},
@@ -77,11 +87,15 @@ async def update_task(task_id: str, task: TaskUpdate):
 
 
 @router.delete("/{task_id}", status_code=204)
-async def delete_task(task_id: str):
-    user_id = get_current_user_id()
+async def delete_task(
+    task_id: str,
+    current_user: schemas.User = Depends(deps.get_current_user)
+):
+    """Delete a task for the authenticated user"""
+    user_id = current_user.id
     result = await tasks_collection.update_one(
         {"_id": ObjectId(task_id), "user_id": user_id, "deleted_at": None},
-        {"$set": {"deleted_at": datetime.utcnow()}}
+        {"$set": {"deleted_at": datetime.now(timezone.utc)}}
     )
     if result.matched_count == 0:
         raise HTTPException(404, "Task not found")
@@ -89,9 +103,13 @@ async def delete_task(task_id: str):
 
 
 @router.post("/{task_id}/complete", response_model=TaskInDB)
-async def mark_complete(task_id: str):
-    user_id = get_current_user_id()
-    now = datetime.utcnow()
+async def mark_complete(
+    task_id: str,
+    current_user: schemas.User = Depends(deps.get_current_user)
+):
+    """Mark a task as completed for the authenticated user"""
+    user_id = current_user.id
+    now = datetime.now(timezone.utc)
     result = await tasks_collection.find_one_and_update(
         {"_id": ObjectId(task_id), "user_id": user_id, "deleted_at": None},
         {"$set": {"completed_at": now, "updated_at": now}},
@@ -104,9 +122,13 @@ async def mark_complete(task_id: str):
 
 
 @router.post("/{task_id}/uncomplete", response_model=TaskInDB)
-async def mark_uncomplete(task_id: str):
-    user_id = get_current_user_id()
-    now = datetime.utcnow()
+async def mark_uncomplete(
+    task_id: str,
+    current_user: schemas.User = Depends(deps.get_current_user)
+):
+    """Mark a task as uncompleted for the authenticated user"""
+    user_id = current_user.id
+    now = datetime.now(timezone.utc)
     result = await tasks_collection.find_one_and_update(
         {"_id": ObjectId(task_id), "user_id": user_id, "deleted_at": None},
         {"$set": {"completed_at": None, "updated_at": now}},
