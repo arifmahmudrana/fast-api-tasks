@@ -11,3 +11,5 @@ passlib[bcrypt]
 python-jose
 python-multipart
 pytest-cov
+motor
+pymongo
