@@ -34,19 +34,28 @@ migrate:
 mysql-test-up:
 	docker run --name fastapi-mysql-test -e MYSQL_ROOT_PASSWORD=example -e MYSQL_DATABASE=fastapi_db_test -p 3307:3306 -d mysql:8.0
 
-test: mysql-test-up venv
+# Testing
+# Spin up MongoDB in Docker, run tests, then clean up
+mongo-test-up:
+	docker run --name fastapi-mongo-test -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=1qazZAQ! -p 27027:27017 -d mongo:6.0
+
+test: mysql-test-up mongo-test-up venv
 	# Wait for MySQL to be ready
 	sleep 20
-	PYTHONPATH=. MYSQL_HOST=127.0.0.1 MYSQL_PORT=3307 MYSQL_USER=root MYSQL_PASSWORD=example MYSQL_DATABASE=fastapi_db_test $(PYTEST)
+	PYTHONPATH=. MYSQL_HOST=127.0.0.1 MYSQL_PORT=3307 MYSQL_USER=root MYSQL_PASSWORD=example MYSQL_DATABASE=fastapi_db_test MONGODB_URL="mongodb://root:1qazZAQ!@localhost:27027/fastapi_tasks_test?authSource=admin" MONGODB_DB="fastapi_tasks_test" $(PYTEST)
 	$(MAKE) coverage
 	$(MAKE) mysql-test-down
+	$(MAKE) mongo-test-down
 
 mysql-test-down:
 	docker rm -f fastapi-mysql-test || true
 
+mongo-test-down:
+	docker rm -f fastapi-mongo-test || true
+
 # Coverage
 coverage:
-	PYTHONPATH=. pytest --cov=app --cov=tests --cov-report=term-missing --cov-report=html
+	PYTHONPATH=. MYSQL_HOST=127.0.0.1 MYSQL_PORT=3307 MYSQL_USER=root MYSQL_PASSWORD=example MYSQL_DATABASE=fastapi_db_test MONGODB_URL="mongodb://root:1qazZAQ!@localhost:27027/fastapi_tasks_test?authSource=admin" MONGODB_DB="fastapi_tasks_test" $(PYTEST) --cov=app --cov=tests --cov-report=term-missing --cov-report=html
 
 # Clean up all Docker containers and volumes
 docker-clean:
@@ -63,4 +72,4 @@ clean:
 	find . -type d -name "__pycache__" -exec rm -r {} +
 	find . -name "*.pyc" -delete
 
-.PHONY: up down venv run migrate test mysql-test-up mysql-test-down coverage docker-clean mongo-up mongo-down clean
+.PHONY: up down venv run migrate test mysql-test-up mysql-test-down coverage docker-clean mongo-up mongo-down clean mongo-test-up mongo-test-down
