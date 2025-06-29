@@ -9,6 +9,7 @@ import app.deps as deps
 
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
+get_task_id = Depends(deps.get_object_id_or_404("task_id", "Task ID"))
 
 
 @router.post("/", response_model=TaskInDB, status_code=status.HTTP_201_CREATED)
@@ -52,7 +53,7 @@ async def list_tasks(
 
 @router.get("/{task_id}", response_model=TaskInDB)
 async def get_task(
-    task_id: str,
+    task_id: ObjectId = get_task_id,
     current_user: schemas.User = Depends(deps.get_current_user)
 ):
     """Get a specific task for the authenticated user"""
@@ -67,8 +68,8 @@ async def get_task(
 
 @router.put("/{task_id}", response_model=TaskInDB)
 async def update_task(
-    task_id: str,
     task: TaskUpdate,
+    task_id: ObjectId = get_task_id,
     current_user: schemas.User = Depends(deps.get_current_user)
 ):
     """Update a task for the authenticated user"""
@@ -93,7 +94,7 @@ async def update_task(
 
 @router.delete("/{task_id}", status_code=204)
 async def delete_task(
-    task_id: str,
+    task_id: ObjectId = get_task_id,
     current_user: schemas.User = Depends(deps.get_current_user)
 ):
     """Delete a task for the authenticated user"""
@@ -110,7 +111,7 @@ async def delete_task(
 
 @router.post("/{task_id}/complete", response_model=TaskInDB)
 async def mark_complete(
-    task_id: str,
+    task_id: ObjectId = get_task_id,
     current_user: schemas.User = Depends(deps.get_current_user)
 ):
     """Mark a task as completed for the authenticated user"""
@@ -130,7 +131,7 @@ async def mark_complete(
 
 @router.post("/{task_id}/uncomplete", response_model=TaskInDB)
 async def mark_uncomplete(
-    task_id: str,
+    task_id: ObjectId = get_task_id,
     current_user: schemas.User = Depends(deps.get_current_user)
 ):
     """Mark a task as uncompleted for the authenticated user"""
