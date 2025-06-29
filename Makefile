@@ -59,4 +59,8 @@ mongo-down:
 	docker stop mongo || true
 	docker rm mongo || true
 
-.PHONY: up down venv run migrate test mysql-test-up mysql-test-down coverage docker-clean mongo-up mongo-down
+clean:
+	find . -type d -name "__pycache__" -exec rm -r {} +
+	find . -name "*.pyc" -delete
+
+.PHONY: up down venv run migrate test mysql-test-up mysql-test-down coverage docker-clean mongo-up mongo-down clean
