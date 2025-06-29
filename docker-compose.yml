@@ -12,6 +12,15 @@ services:
       - '3306:3306'
     volumes:
       - db_data:/var/lib/mysql
+  mongo:
+    image: mongo:6.0
+    restart: always
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_DATABASE: fastapi_tasks
+    volumes:
+      - mongo_data:/data/db
   web:
     build: .
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -23,5 +32,7 @@ services:
       - .env
     depends_on:
       - db
+      - mongo
 volumes:
   db_data:
+  mongo_data:
