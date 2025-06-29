@@ -17,6 +17,78 @@
         "action": "openExternally"
       },
       "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Debug Python Tests all file",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.venv/bin/pytest",
+      "args": [
+        "-v",
+        "--disable-warnings"
+        // Or use specific test path:
+        // "tests/unit/test_crud.py::TestPasswordHashing::test_pwd_context_configuration"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "3307",
+        "MYSQL_USER": "root",
+        "MYSQL_PASSWORD": "example",
+        "MYSQL_DATABASE": "fastapi_db_test"
+      },
+      "envFile": "${workspaceFolder}/.env",
+      "justMyCode": false  // To debug into library code if needed
+    },
+    {
+      "name": "Debug Python Tests current file",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.venv/bin/pytest",
+      "args": [
+        "-v",
+        "--disable-warnings",
+        "${file}"  // Debug current test file
+        // Or use specific test path:
+        // "tests/unit/test_crud.py::TestPasswordHashing::test_pwd_context_configuration"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "3307",
+        "MYSQL_USER": "root",
+        "MYSQL_PASSWORD": "example",
+        "MYSQL_DATABASE": "fastapi_db_test"
+      },
+      "envFile": "${workspaceFolder}/.env",
+      "justMyCode": false  // To debug into library code if needed
+    },
+    {
+      "name": "Debug Python Tests (Fail Fast) current file",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.venv/bin/pytest",
+      "args": [
+        "-x",  // Stop after first failure
+        "--tb=short",  // Shorter traceback format or we can use --maxfail=1
+        "--disable-warnings",
+        "${file}"  // Debug current test file
+        // Or use specific test path:
+        // "tests/unit/test_crud.py::TestPasswordHashing::test_pwd_context_configuration"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "3307",
+        "MYSQL_USER": "root",
+        "MYSQL_PASSWORD": "example",
+        "MYSQL_DATABASE": "fastapi_db_test"
+      },
+      "envFile": "${workspaceFolder}/.env",
+      "justMyCode": false  // To debug into library code if needed
     }
   ]
 }
