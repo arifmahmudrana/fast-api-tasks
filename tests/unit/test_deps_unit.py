@@ -1,8 +1,9 @@
 # tests/unit/test_deps_unit.py
+from bson import ObjectId
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, Path
 from jose import JWTError
-from app.deps import get_db, get_current_user
+from app.deps import get_db, get_current_user, get_object_id_or_404
 from app import crud
 
 # Mock data for testing
@@ -110,3 +111,51 @@ def test_get_current_user_nonexistent_user(mocker):
 
     assert exc_info.value.status_code == 401
     assert exc_info.value.detail == "Could not validate credentials"
+
+
+def test_get_object_id_or_404_valid_id():
+    # Create the dependency function
+    dependency_func = get_object_id_or_404("item_id", "Test item ID")
+
+    # Test with a valid ObjectId string
+    valid_id = "507f1f77bcf86cd799439011"
+    result = dependency_func(obj_id=valid_id)
+
+    assert isinstance(result, ObjectId)
+    assert str(result) == valid_id
+
+
+def test_get_object_id_or_404_invalid_id():
+    # Create the dependency function
+    dependency_func = get_object_id_or_404("item_id", "Test item ID")
+
+    # Test with an invalid ObjectId string
+    invalid_id = "not-a-valid-object-id"
+
+    with pytest.raises(HTTPException) as exc_info:
+        dependency_func(obj_id=invalid_id)
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Not found"
+
+
+def test_get_object_id_or_404_with_path_parameters(mocker):
+    # # Create the dependency function
+    param_name = "item_id"
+    description = "Test ID"
+
+    dependency_func = get_object_id_or_404(param_name, description)
+
+    # Inspect the function's parameters
+    import inspect
+    sig = inspect.signature(dependency_func)
+    param = sig.parameters["obj_id"]
+
+    # Verify Path configuration
+    assert isinstance(param.default, type(Path(...)))
+    assert param.default.alias == param_name
+    assert param.default.description == description
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
