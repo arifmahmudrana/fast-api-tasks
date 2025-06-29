@@ -1,4 +1,4 @@
-# tests/integration/test_users.py
+# tests/integration/test_users_integration.py
 import os
 import pytest
 from fastapi.testclient import TestClient
@@ -74,3 +74,7 @@ def test_register_and_login(client):
         token_data = response.json()
         assert "access_token" in token_data
         assert token_data["token_type"] == "bearer"
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

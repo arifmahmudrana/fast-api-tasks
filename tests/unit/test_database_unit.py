@@ -1,4 +1,4 @@
-# tests/unit/test_database.py
+# tests/unit/test_database_unit.py
 import pytest
 import os
 from unittest.mock import patch, MagicMock
@@ -80,3 +80,7 @@ class TestDatabaseURLHandling:
             from app.database import init_db
             engine, _, _ = init_db()
             mock_engine.assert_called_once_with('sqlite:///test.db')
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

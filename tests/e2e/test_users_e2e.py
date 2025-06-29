@@ -1,4 +1,6 @@
+# tests/e2e/test_users_e2e.py
 from fastapi.testclient import TestClient
+import pytest
 from app.main import app
 
 client = TestClient(app)
@@ -20,3 +22,7 @@ def test_register_and_login():
         token_data = response.json()
         assert "access_token" in token_data
         assert token_data["token_type"] == "bearer"
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
