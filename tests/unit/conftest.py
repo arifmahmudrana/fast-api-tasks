@@ -30,19 +30,6 @@ def mock_user_model():
     return mock_user
 
 
-@pytest.fixture(scope="function")
-def clean_environment():
-    """Fixture to ensure clean environment for each test"""
-    # Store original environment
-    original_env = os.environ.copy()
-
-    yield
-
-    # Restore original environment
-    os.environ.clear()
-    os.environ.update(original_env)
-
-
 @pytest.fixture
 def mock_database_components():
     """Fixture providing mocked database components"""
