@@ -1,5 +1,5 @@
 # app/routers/tasks.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from datetime import datetime, UTC
 from bson import ObjectId
 from app.schemas_task import TaskCreate, TaskUpdate, TaskInDB, TaskList
@@ -11,7 +11,7 @@ import app.deps as deps
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-@router.post("/", response_model=TaskInDB, status_code=201)
+@router.post("/", response_model=TaskInDB, status_code=status.HTTP_201_CREATED)
 async def create_task(
     task: TaskCreate,
     current_user: schemas.User = Depends(deps.get_current_user)
@@ -60,7 +60,7 @@ async def get_task(
     tasks_collection = get_tasks_collection()
     doc = await tasks_collection.find_one({"_id": ObjectId(task_id), "user_id": user_id, "deleted_at": None})
     if not doc:
-        raise HTTPException(404, "Task not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found")
     doc["_id"] = str(doc["_id"])
     return TaskInDB(**doc)
 
@@ -86,7 +86,7 @@ async def update_task(
         return_document=True
     )
     if not result:
-        raise HTTPException(404, "Task not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found")
     result["_id"] = str(result["_id"])
     return TaskInDB(**result)
 
@@ -104,7 +104,7 @@ async def delete_task(
         {"$set": {"deleted_at": datetime.now(UTC)}}
     )
     if result.matched_count == 0:
-        raise HTTPException(404, "Task not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found")
     return
 
 
@@ -123,7 +123,7 @@ async def mark_complete(
         return_document=True
     )
     if not result:
-        raise HTTPException(404, "Task not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found")
     result["_id"] = str(result["_id"])
     return TaskInDB(**result)
 
@@ -143,6 +143,6 @@ async def mark_uncomplete(
         return_document=True
     )
     if not result:
-        raise HTTPException(404, "Task not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found")
     result["_id"] = str(result["_id"])
     return TaskInDB(**result)
