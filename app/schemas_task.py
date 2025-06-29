@@ -20,10 +20,8 @@ class TaskUpdate(TaskBase):
 
 class TaskInDB(TaskBase):
     id: str = Field(..., alias="_id")
-    user_id: str
     created_at: datetime
     updated_at: datetime
-    deleted_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
 
 
