@@ -7,7 +7,7 @@
 - [x] Environment variables managed by python-dotenv
 - [x] Local development with Docker Compose and hot reloading
 - [x] Unit, integration, and end-to-end tests
-- [ ] Tasks management using MongoDB
+- [x] Tasks management using MongoDB
 - [ ] User profile image using AWS S3
 - [ ] Caching
 - [ ] ELK application log
