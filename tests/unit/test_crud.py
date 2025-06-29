@@ -1,9 +1,10 @@
 # tests/unit/test_crud.py
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 import os
+from jose import jwt, JWTError
+from datetime import datetime, timedelta, UTC
 
 # Import the module under test
 from app import crud, models, schemas
@@ -253,6 +254,191 @@ class TestAuthenticateUser(TestCrudFunctions):
         assert result is False
         mock_pwd_context.verify.assert_called_once_with(
             "", sample_db_user.hashed_password)
+
+
+class TestCreateAccessToken(TestCrudFunctions):
+    """Tests for create_access_token function"""
+
+    def test_create_access_token_success(self):
+        """Test successful access token creation"""
+        # Arrange
+        test_data = {"sub": "test@example.com", "user_id": 1}
+
+        # Act
+        token = crud.create_access_token(test_data)
+
+        # Assert
+        assert isinstance(token, str)
+        assert len(token) > 0
+
+        # Verify token can be decoded
+        decoded = jwt.decode(token, crud.SECRET_KEY,
+                             algorithms=[crud.ALGORITHM])
+        assert decoded["sub"] == "test@example.com"
+        assert decoded["user_id"] == 1
+        assert "exp" in decoded
+
+    def test_create_access_token_with_expiration(self):
+        """Test that token has correct expiration time"""
+        # Arrange
+        test_data = {"sub": "test@example.com"}
+        before_creation = datetime.now(UTC).timestamp()
+
+        # Act
+        token = crud.create_access_token(test_data)
+        after_creation = datetime.now(UTC).timestamp()
+
+        # Assert
+        decoded = jwt.decode(token, crud.SECRET_KEY,
+                             algorithms=[crud.ALGORITHM])
+        token_exp = decoded["exp"]  # Get the raw timestamp
+
+        # Token should expire after the configured minutes
+        expected_min_exp = before_creation + \
+            (crud.ACCESS_TOKEN_EXPIRE_MINUTES * 60) - 1  # -1 second buffer
+        expected_max_exp = after_creation + \
+            (crud.ACCESS_TOKEN_EXPIRE_MINUTES * 60) + 1  # +1 second buffer
+
+        assert expected_min_exp <= token_exp <= expected_max_exp
+
+    def test_create_access_token_with_empty_data(self):
+        """Test token creation with empty data"""
+        # Arrange
+        test_data = {}
+
+        # Act
+        token = crud.create_access_token(test_data)
+
+        # Assert
+        assert token is not None
+        decoded = jwt.decode(token, crud.SECRET_KEY,
+                             algorithms=[crud.ALGORITHM])
+        assert "exp" in decoded
+
+    def test_create_access_token_with_multiple_claims(self):
+        """Test token creation with multiple claims"""
+        # Arrange
+        test_data = {
+            "sub": "test@example.com",
+            "user_id": 123,
+            "role": "admin",
+            "permissions": ["read", "write"]
+        }
+
+        # Act
+        token = crud.create_access_token(test_data)
+
+        # Assert
+        decoded = jwt.decode(token, crud.SECRET_KEY,
+                             algorithms=[crud.ALGORITHM])
+        assert decoded["sub"] == "test@example.com"
+        assert decoded["user_id"] == 123
+        assert decoded["role"] == "admin"
+        assert decoded["permissions"] == ["read", "write"]
+        assert "exp" in decoded
+
+    def test_create_access_token_does_not_modify_original_data(self):
+        """Test that original data dict is not modified"""
+        # Arrange
+        original_data = {"sub": "test@example.com", "user_id": 1}
+        data_copy = original_data.copy()
+
+        # Act
+        crud.create_access_token(original_data)
+
+        # Assert
+        assert original_data == data_copy
+        assert "exp" not in original_data
+
+    @patch('app.crud.datetime')
+    def test_create_access_token_uses_utc_time(self, mock_datetime):
+        """Test that token creation uses UTC time"""
+        # Arrange
+        fixed_utc_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+        mock_datetime.now.return_value = fixed_utc_time
+        # Don't mock side_effect as it interferes with jwt.encode's type checking
+        # mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
+
+        test_data = {"sub": "test@example.com"}
+
+        # Act
+        token = crud.create_access_token(test_data)
+
+        # Assert
+        mock_datetime.now.assert_called_once_with(UTC)
+
+        # Mock datetime for jwt.decode to avoid expiration check
+        with patch('jose.jwt.datetime') as mock_jwt_datetime:
+            mock_jwt_datetime.now.return_value = fixed_utc_time
+            decoded = jwt.decode(token, crud.SECRET_KEY,
+                                 algorithms=[crud.ALGORITHM])
+
+            expected_exp = int((
+                fixed_utc_time + timedelta(minutes=crud.ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp())
+            assert decoded["exp"] == expected_exp
+
+    def test_create_access_token_with_special_characters(self):
+        """Test token creation with special characters in data"""
+        # Arrange
+        test_data = {
+            "sub": "test+tag@example-domain.co.uk",
+            "name": "José María",
+            "description": "User with émojis 🚀 and spéciał chars"
+        }
+
+        # Act
+        token = crud.create_access_token(test_data)
+
+        # Assert
+        decoded = jwt.decode(token, crud.SECRET_KEY,
+                             algorithms=[crud.ALGORITHM])
+        assert decoded["sub"] == "test+tag@example-domain.co.uk"
+        assert decoded["name"] == "José María"
+        assert decoded["description"] == "User with émojis 🚀 and spéciał chars"
+
+    @patch.dict(os.environ, {"ACCESS_TOKEN_EXPIRE_MINUTES": "60"})
+    def test_create_access_token_custom_expiration(self):
+        """Test token creation with custom expiration time"""
+        # Need to reload to pick up new environment variable
+        import importlib
+        importlib.reload(crud)
+
+        # Arrange
+        test_data = {"sub": "test@example.com"}
+        before_creation = datetime.now(UTC)
+
+        # Act
+        token = crud.create_access_token(test_data)
+
+        # Assert
+        decoded = jwt.decode(token, crud.SECRET_KEY,
+                             algorithms=[crud.ALGORITHM])
+        token_exp = datetime.fromtimestamp(decoded["exp"], UTC)
+        expected_exp = before_creation + timedelta(minutes=60)
+
+        # Allow for small time differences during test execution
+        time_diff = abs((token_exp - expected_exp).total_seconds())
+        assert time_diff < 5  # Less than 5 seconds difference
+
+    def test_create_access_token_different_secret_fails_verification(self):
+        """Test that token created with one secret fails with different secret"""
+        # Arrange
+        test_data = {"sub": "test@example.com"}
+        token = crud.create_access_token(test_data)
+
+        # Act & Assert
+        with pytest.raises(JWTError):
+            jwt.decode(token, "different_secret", algorithms=[crud.ALGORITHM])
+
+    def test_create_access_token_different_algorithm_fails_verification(self):
+        """Test that token fails verification with different algorithm"""
+        # Arrange
+        test_data = {"sub": "test@example.com"}
+        token = crud.create_access_token(test_data)
+
+        # Act & Assert
+        with pytest.raises(JWTError):
+            jwt.decode(token, crud.SECRET_KEY, algorithms=["HS512"])
 
 
 class TestPasswordHashing(TestCrudFunctions):
