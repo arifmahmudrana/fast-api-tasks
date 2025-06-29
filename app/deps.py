@@ -1,4 +1,6 @@
-from fastapi import Depends, HTTPException, status
+# app/deps.py
+from bson import ObjectId
+from fastapi import Depends, HTTPException, Path, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
@@ -34,3 +36,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+
+def get_object_id_or_404(param_name: str, description: str):
+    def dependency(
+        obj_id: str = Path(..., alias=param_name, description=description),
+    ) -> ObjectId:
+        if not ObjectId.is_valid(obj_id):
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+        return ObjectId(obj_id)
+    return dependency
