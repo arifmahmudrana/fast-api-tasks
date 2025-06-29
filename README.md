@@ -97,6 +97,17 @@ make run
 - `alembic upgrade head` - Apply migrations
 - `pytest` - Run tests
 
+## MongoDB for Tasks
+- MongoDB is used for all task management features (create, edit, delete, list, complete/uncomplete).
+- MongoDB runs as a service in Docker Compose (see `docker-compose.yml`).
+- The default database is `fastapi_tasks` on port 27017.
+- Make sure MongoDB is running (via Docker or your own instance) before using task endpoints.
+
+## Task Management API
+- Endpoints for creating, editing, deleting, listing (with pagination), and marking tasks as completed/uncompleted are available under `/tasks`.
+- Task fields: id, user_id, created_at, updated_at, deleted_at, title, description, completed_at.
+- Indexes: user_id, created_at, updated_at, deleted_at, completed_at.
+
 ---
 
 For more details, see each folder's README or docstrings.
