@@ -53,7 +53,7 @@ async def disconnect_from_mongo():
     """Close database connection"""
     global mongo_client
     if mongo_client:
-        mongo_client.close()
+        await mongo_client.close()
         print("Disconnected from MongoDB")
 
 
