@@ -52,4 +52,11 @@ coverage:
 docker-clean:
 	docker system prune -af --volumes
 
-.PHONY: up down venv run migrate test mysql-test-up mysql-test-down coverage docker-clean
+mongo-up:
+	docker start mongo || docker run --name mongo -d -p 27017:27017 mongo:6.0
+
+mongo-down:
+	docker stop mongo || true
+	docker rm mongo || true
+
+.PHONY: up down venv run migrate test mysql-test-up mysql-test-down coverage docker-clean mongo-up mongo-down
