@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from bson import ObjectId
 from app.schemas_task import TaskCreate, TaskUpdate, TaskInDB, TaskList
 from app.mongo import get_tasks_collection
@@ -16,7 +16,7 @@ async def create_task(
     current_user: schemas.User = Depends(deps.get_current_user)
 ):
     """Create a new task for the authenticated user"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     doc = {
         "user_id": current_user.id,
         "title": task.title,
@@ -74,10 +74,10 @@ async def update_task(
     user_id = current_user.id
     update = {k: v for k, v in task.dict(
         exclude_unset=True).items() if v is not None}
-    update["updated_at"] = datetime.now(timezone.utc)
+    update["updated_at"] = datetime.now(UTC)
     if "completed" in update:
         update["completed_at"] = datetime.now(
-            timezone.utc) if update.pop("completed") else None
+            UTC) if update.pop("completed") else None
     tasks_collection = get_tasks_collection()
     result = await tasks_collection.find_one_and_update(
         {"_id": ObjectId(task_id), "user_id": user_id, "deleted_at": None},
@@ -100,7 +100,7 @@ async def delete_task(
     tasks_collection = get_tasks_collection()
     result = await tasks_collection.update_one(
         {"_id": ObjectId(task_id), "user_id": user_id, "deleted_at": None},
-        {"$set": {"deleted_at": datetime.now(timezone.utc)}}
+        {"$set": {"deleted_at": datetime.now(UTC)}}
     )
     if result.matched_count == 0:
         raise HTTPException(404, "Task not found")
@@ -114,7 +114,7 @@ async def mark_complete(
 ):
     """Mark a task as completed for the authenticated user"""
     user_id = current_user.id
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     tasks_collection = get_tasks_collection()
     result = await tasks_collection.find_one_and_update(
         {"_id": ObjectId(task_id), "user_id": user_id, "deleted_at": None},
@@ -134,7 +134,7 @@ async def mark_uncomplete(
 ):
     """Mark a task as uncompleted for the authenticated user"""
     user_id = current_user.id
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     tasks_collection = get_tasks_collection()
     result = await tasks_collection.find_one_and_update(
         {"_id": ObjectId(task_id), "user_id": user_id, "deleted_at": None},
