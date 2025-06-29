@@ -1,4 +1,4 @@
-# tests/unit/test_deps.py
+# tests/unit/test_deps_unit.py
 import pytest
 from fastapi import HTTPException
 from jose import JWTError
