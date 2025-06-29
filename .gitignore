@@ -10,6 +10,9 @@ __pycache__/
 venv/
 ENV/
 
+# VSCode
+# .vscode/
+
 # macOS
 .DS_Store
 
@@ -24,7 +27,6 @@ pytest_cache/
 
 # Environment files
 .env
-.env.*
 
 # Docker
 *.pid
