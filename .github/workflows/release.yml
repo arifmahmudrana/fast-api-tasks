@@ -1,0 +1,159 @@
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY_GHCR: ghcr.io
+  REGISTRY_DOCKERHUB: docker.io
+  DOCKERHUB_USERNAME: arifmahmudrana
+  IMAGE_NAME: fastapi-tasks-api
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Verify Dockerfile exists
+      run: |
+        if [ ! -f Dockerfile ]; then
+          echo "Error: Dockerfile not found in repository root"
+          exit 1
+        fi
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY_GHCR }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_TOKEN }}
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY_DOCKERHUB }}
+        username: ${{ env.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ env.REGISTRY_GHCR }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          ${{ env.REGISTRY_DOCKERHUB }}/${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest
+        labels: |
+          org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+          org.opencontainers.image.description=FastAPI Tasks API with User System
+          org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          org.opencontainers.image.version=${{ github.ref_name }}
+          org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+          org.opencontainers.image.revision=${{ github.sha }}
+
+    - name: Build and push Docker images
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          PYTHON_VERSION=3.13
+
+    - name: Get primary image tag for security scanning
+      id: primary-tag
+      run: |
+        PRIMARY_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+        echo "tag=$PRIMARY_TAG" >> $GITHUB_OUTPUT
+
+    - name: Run Trivy vulnerability scanner on image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ steps.primary-tag.outputs.tag }}
+        format: 'sarif'
+        output: 'trivy-image-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+
+    - name: Upload Trivy image scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-image-results.sarif'
+
+    - name: Test Docker image
+      run: |
+        # Pull the built image and test it
+        docker pull ${{ steps.primary-tag.outputs.tag }}
+        
+        # Start a test container
+        docker run -d --name test-container \
+          -e MYSQL_HOST=dummy \
+          -e MYSQL_DATABASE=dummy \
+          -e MYSQL_USER=dummy \
+          -e MYSQL_PASSWORD=dummy \
+          -e MONGODB_URL=mongodb://dummy:27017/dummy \
+          -p 8001:8000 \
+          ${{ steps.primary-tag.outputs.tag }}
+        
+        # Wait a bit for the container to start
+        sleep 5
+        
+        # Check if the container is still running
+        if docker ps | grep test-container; then
+          echo "Container is running successfully"
+        else
+          echo "Container failed to start"
+          docker logs test-container
+          exit 1
+        fi
+        
+        # Clean up
+        docker stop test-container
+        docker rm test-container
+
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        generate_release_notes: true
+        files: |
+          trivy-image-results.sarif
+        body: |
+          ## Docker Images
+          
+          ### GitHub Container Registry
+          ```bash
+          docker pull ${{ env.REGISTRY_GHCR }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          ```
+          
+          ### Docker Hub
+          ```bash
+          docker pull ${{ env.REGISTRY_DOCKERHUB }}/${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          ```
+          
+          ## Security Scan Results
+          Security scan results are attached to this release.
+      env:
+        GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
