@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from .routers import users, tasks
-from .mongo import connect_to_mongo, disconnect_from_mongo, ensure_indexes
+from app.routers import users, tasks
+from app.mongo import connect_to_mongo, disconnect_from_mongo, ensure_indexes
 
 
 @asynccontextmanager
