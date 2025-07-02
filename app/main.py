@@ -1,8 +1,10 @@
 # app/main.py
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from app.routers import users, tasks
+
+from fastapi import FastAPI
+
 from app.mongo import connect_to_mongo, disconnect_from_mongo, ensure_indexes
+from app.routers import tasks, users
 
 
 @asynccontextmanager

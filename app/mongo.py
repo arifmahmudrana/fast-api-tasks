@@ -1,9 +1,10 @@
 # app/mongo.py
-from typing import Optional
-from pymongo import AsyncMongoClient, ASCENDING, DESCENDING
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 import os
+from typing import Optional
+
 from dotenv import load_dotenv
+from pymongo import ASCENDING, DESCENDING, AsyncMongoClient
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 load_dotenv()
 

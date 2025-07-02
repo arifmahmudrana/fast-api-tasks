@@ -1,13 +1,13 @@
 # tests/integration/test_users_integration.py
 import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.main import app
 from app.deps import get_db
-
+from app.main import app
 
 # --- Database setup ---
 SQLALCHEMY_DATABASE_URL = os.environ["DATABASE_URL"]

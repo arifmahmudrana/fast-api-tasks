@@ -1,19 +1,21 @@
 # tests/unit/routers/test_tasks_unit.py
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
 from bson import ObjectId
 from fastapi import HTTPException
+
+import app.schemas as schemas
 from app.routers.tasks import (
     create_task,
-    list_tasks,
-    get_task,
-    update_task,
     delete_task,
+    get_task,
+    list_tasks,
     mark_complete,
     mark_uncomplete,
+    update_task,
 )
-from app.schemas_task import TaskCreate, TaskUpdate, TaskInDB, TaskList
-import app.schemas as schemas
+from app.schemas_task import TaskCreate, TaskInDB, TaskList, TaskUpdate
 
 
 class TestTaskBase:

@@ -1,8 +1,9 @@
 # tests/unit/conftest.py
-import pytest
-import sys
 import os
+import sys
 from unittest.mock import Mock
+
+import pytest
 
 # Mock the models and schemas modules at import time to avoid SQLAlchemy dependencies
 sys.modules["app.models"] = Mock()

@@ -1,6 +1,7 @@
 # tests/e2e/test_users_e2e.py
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
+
 from app.main import app
 
 client = TestClient(app)

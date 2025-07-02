@@ -1,10 +1,11 @@
 # tests/unit/test_deps_unit.py
-from bson import ObjectId
 import pytest
+from bson import ObjectId
 from fastapi import HTTPException, Path
 from jose import JWTError
-from app.deps import get_db, get_current_user, get_object_id_or_404
+
 from app import crud
+from app.deps import get_current_user, get_db, get_object_id_or_404
 
 # Mock data for testing
 TEST_SECRET_KEY = "test-secret-key"

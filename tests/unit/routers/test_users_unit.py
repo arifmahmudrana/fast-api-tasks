@@ -2,8 +2,9 @@
 import pytest
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+
+from app import crud, schemas
 from app.routers.users import router
-from app import schemas, crud
 
 
 @pytest.fixture

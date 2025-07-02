@@ -1,8 +1,9 @@
 import os
-from asgi_lifespan import LifespanManager
+
 import pytest
-from httpx import ASGITransport, AsyncClient
 import pytest_asyncio
+from asgi_lifespan import LifespanManager
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 

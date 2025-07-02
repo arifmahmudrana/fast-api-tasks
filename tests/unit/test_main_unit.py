@@ -1,9 +1,10 @@
 # tests/unit/test_main_unit.py
+from importlib import reload
+from unittest.mock import AsyncMock
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
-from importlib import reload
 
 
 @pytest.fixture

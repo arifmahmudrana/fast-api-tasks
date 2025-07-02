@@ -1,9 +1,12 @@
-from sqlalchemy.orm import Session
-from app import models, schemas
-from passlib.context import CryptContext
-from jose import jwt
+# app/crud.py
 import os
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
+
+from jose import jwt
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from app import models, schemas
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = os.getenv("SECRET_KEY", "secret")
