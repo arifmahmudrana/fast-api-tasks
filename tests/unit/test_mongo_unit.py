@@ -2,8 +2,12 @@
 from unittest.mock import MagicMock
 
 import pytest
-from app.mongo import (connect_to_mongo, disconnect_from_mongo, ensure_indexes,
-                       get_tasks_collection)
+from app.mongo import (
+    connect_to_mongo,
+    disconnect_from_mongo,
+    ensure_indexes,
+    get_tasks_collection,
+)
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 
