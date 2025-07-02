@@ -20,7 +20,7 @@ class TaskCreate(TaskBase):
         return v
 
 
-class TaskUpdate(TaskBase):
+class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     completed: Optional[bool] = None
@@ -36,9 +36,13 @@ class TaskUpdate(TaskBase):
 
 class TaskInDB(TaskBase):
     id: str = Field(..., alias="_id")
+    user_id: int  # Add user_id field
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None  # Add deleted_at field
+
+    model_config = {"populate_by_name": True}
 
 
 class TaskList(BaseModel):
