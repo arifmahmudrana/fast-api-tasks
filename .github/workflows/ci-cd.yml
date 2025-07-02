@@ -94,11 +94,7 @@ jobs:
       run: |
         PYTHONPATH=. alembic upgrade head
       env:
-        MYSQL_HOST: 127.0.0.1
-        MYSQL_PORT: 3306
-        MYSQL_USER: testuser
-        MYSQL_PASSWORD: testpass
-        MYSQL_DATABASE: fastapi_db_test
+        DATABASE_URL: mysql+mysqldb://testuser:testpass@127.0.0.1:3306/fastapi_db_test
 
     - name: Run tests with coverage
       run: |
