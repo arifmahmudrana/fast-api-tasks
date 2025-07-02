@@ -1,4 +1,4 @@
-# FastAPI Tasks API with User System with OAuth2, MySQL, Docker, and Testing
+# FastAPI Tasks API with User System with OAuth2, MySQL, Docker, and Testing [![codecov](https://codecov.io/gh/arifmahmudrana/fast-api-tasks/branch/main/graph/badge.svg)](https://codecov.io/gh/arifmahmudrana/fast-api-tasks)
 
 ## Features
 - [x] FastAPI app with OAuth2 authentication
@@ -11,7 +11,7 @@
 - [ ] User profile image using AWS S3
 - [ ] Caching
 - [ ] ELK application log
-- [ ] CI/CD
+- [x] CI/CD
 - [ ] User password reset
 - [ ] Tasks search using elastic search
 - [ ] Kibana dashboard
