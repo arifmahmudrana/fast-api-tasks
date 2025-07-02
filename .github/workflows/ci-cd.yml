@@ -34,7 +34,7 @@ jobs:
     - name: Run isort import sorting check
       run: |
         pip install isort
-        isort --check-only app tests
+        isort --profile black --check-only app tests
 
     - name: Run pylint
       run: |

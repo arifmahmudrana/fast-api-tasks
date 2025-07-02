@@ -2,13 +2,14 @@
 from unittest.mock import MagicMock
 
 import pytest
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+
 from app.mongo import (
     connect_to_mongo,
     disconnect_from_mongo,
     ensure_indexes,
     get_tasks_collection,
 )
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 
 class TestMongoFunctions:
@@ -78,8 +79,9 @@ class TestEnsureIndexes(TestMongoFunctions):
     @pytest.mark.asyncio
     async def test_ensure_indexes_success_creates_all_indexes(self, mocker, capsys):
         """Test successful index creation with all expected indexes"""
-        import app.mongo
         from pymongo import ASCENDING, DESCENDING
+
+        import app.mongo
 
         # Use AsyncMock for async methods
         mock_collection = mocker.AsyncMock()
