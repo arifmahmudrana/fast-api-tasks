@@ -11,9 +11,13 @@ def mock_mongo(mocker):
     """Fixture to mock all MongoDB operations with proper patching"""
     # Patch before importing the app
     mocks = {
-        'connect': mocker.patch('app.mongo.connect_to_mongo', new_callable=AsyncMock),
-        'disconnect': mocker.patch('app.mongo.disconnect_from_mongo', new_callable=AsyncMock),
-        'ensure_indexes': mocker.patch('app.mongo.ensure_indexes', new_callable=AsyncMock)
+        "connect": mocker.patch("app.mongo.connect_to_mongo", new_callable=AsyncMock),
+        "disconnect": mocker.patch(
+            "app.mongo.disconnect_from_mongo", new_callable=AsyncMock
+        ),
+        "ensure_indexes": mocker.patch(
+            "app.mongo.ensure_indexes", new_callable=AsyncMock
+        ),
     }
     return mocks
 
@@ -23,6 +27,7 @@ def app_with_mocks(mock_mongo):
     """Fixture that provides the app with mocks already in place"""
     # Need to reload the module to apply mocks
     from app import main
+
     reload(main)
     return main.app
 
@@ -36,29 +41,31 @@ def client(app_with_mocks):
 @pytest.mark.asyncio
 async def test_lifespan_success(app_with_mocks, mock_mongo):
     # Configure mocks
-    mock_mongo['connect'].return_value = None
-    mock_mongo['ensure_indexes'].return_value = None
-    mock_mongo['disconnect'].return_value = None
+    mock_mongo["connect"].return_value = None
+    mock_mongo["ensure_indexes"].return_value = None
+    mock_mongo["disconnect"].return_value = None
 
     # Get the lifespan function from the reloaded module
     from app.main import lifespan
+
     async with lifespan(app_with_mocks):
         pass
 
     # Assertions
-    mock_mongo['connect'].assert_awaited_once()
-    mock_mongo['ensure_indexes'].assert_awaited_once()
-    mock_mongo['disconnect'].assert_awaited_once()
+    mock_mongo["connect"].assert_awaited_once()
+    mock_mongo["ensure_indexes"].assert_awaited_once()
+    mock_mongo["disconnect"].assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_lifespan_connection_error(app_with_mocks, mock_mongo):
     # Configure mocks
-    mock_mongo['connect'].side_effect = Exception("Connection failed")
-    mock_mongo['ensure_indexes'].assert_not_awaited()
-    mock_mongo['disconnect'].assert_not_awaited()
+    mock_mongo["connect"].side_effect = Exception("Connection failed")
+    mock_mongo["ensure_indexes"].assert_not_awaited()
+    mock_mongo["disconnect"].assert_not_awaited()
 
     from app.main import lifespan
+
     with pytest.raises(Exception, match="Connection failed"):
         async with lifespan(app_with_mocks):
             pass
@@ -79,16 +86,16 @@ def test_router_inclusion(app_with_mocks):
 @pytest.mark.asyncio
 async def test_lifespan_in_actual_app(client, mock_mongo):
     # Configure mocks
-    mock_mongo['connect'].return_value = None
-    mock_mongo['ensure_indexes'].return_value = None
+    mock_mongo["connect"].return_value = None
+    mock_mongo["ensure_indexes"].return_value = None
 
     # This will trigger the lifespan
     with client:
         response = client.get("/")
         assert response.status_code == 404
 
-    mock_mongo['connect'].assert_awaited_once()
-    mock_mongo['disconnect'].assert_awaited_once()
+    mock_mongo["connect"].assert_awaited_once()
+    mock_mongo["disconnect"].assert_awaited_once()
 
 
 if __name__ == "__main__":

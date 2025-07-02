@@ -4,8 +4,13 @@ from datetime import datetime, UTC
 from bson import ObjectId
 from fastapi import HTTPException
 from app.routers.tasks import (
-    create_task, list_tasks, get_task, update_task,
-    delete_task, mark_complete, mark_uncomplete
+    create_task,
+    list_tasks,
+    get_task,
+    update_task,
+    delete_task,
+    mark_complete,
+    mark_uncomplete,
 )
 from app.schemas_task import TaskCreate, TaskUpdate, TaskInDB, TaskList
 import app.schemas as schemas
@@ -25,7 +30,7 @@ class TestTaskBase:
     @pytest.fixture
     def mock_now(self, mocker):
         now = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
-        mocker.patch('app.routers.tasks.datetime').now.return_value = now
+        mocker.patch("app.routers.tasks.datetime").now.return_value = now
         return now
 
     @pytest.fixture
@@ -39,7 +44,7 @@ class TestTaskBase:
                 "created_at": datetime(2023, 1, 1, tzinfo=UTC),
                 "updated_at": datetime(2023, 1, 1, tzinfo=UTC),
                 "completed_at": None,
-                "deleted_at": None
+                "deleted_at": None,
             },
             {
                 "_id": ObjectId("507f1f77bcf86cd799439012"),
@@ -49,8 +54,8 @@ class TestTaskBase:
                 "created_at": datetime(2023, 1, 2, tzinfo=UTC),
                 "updated_at": datetime(2023, 1, 2, tzinfo=UTC),
                 "completed_at": None,
-                "deleted_at": None
-            }
+                "deleted_at": None,
+            },
         ]
 
     @pytest.fixture
@@ -63,7 +68,7 @@ class TestTaskBase:
             "created_at": datetime(2023, 1, 1, tzinfo=UTC),
             "updated_at": datetime(2023, 1, 1, tzinfo=UTC),
             "completed_at": None,
-            "deleted_at": None
+            "deleted_at": None,
         }
 
     @pytest.fixture
@@ -80,7 +85,7 @@ class TestTaskBase:
             "created_at": datetime(2023, 1, 1, tzinfo=UTC),
             "updated_at": datetime(2023, 1, 2, tzinfo=UTC),
             "completed_at": datetime(2023, 1, 2, tzinfo=UTC),
-            "deleted_at": None
+            "deleted_at": None,
         }
 
     @pytest.fixture
@@ -93,7 +98,7 @@ class TestTaskBase:
             "created_at": datetime(2023, 1, 1, tzinfo=UTC),
             "updated_at": datetime(2023, 1, 2, tzinfo=UTC),
             "completed_at": datetime(2023, 1, 2, tzinfo=UTC),
-            "deleted_at": None
+            "deleted_at": None,
         }
 
     @pytest.fixture
@@ -106,7 +111,7 @@ class TestTaskBase:
             "created_at": datetime(2023, 1, 1, tzinfo=UTC),
             "updated_at": datetime(2023, 1, 2, tzinfo=UTC),
             "completed_at": None,
-            "deleted_at": None
+            "deleted_at": None,
         }
 
 
@@ -121,8 +126,9 @@ class TestCreateTask(TestTaskBase):
         mock_result.inserted_id = ObjectId("507f1f77bcf86cd799439011")
         mock_collection.insert_one.return_value = mock_result
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act
         result = await create_task(task_create, mock_user)
@@ -159,13 +165,16 @@ class TestListTasks(TestTaskBase):
         mock_cursor.__aiter__.return_value = iter(mock_tasks_data)
 
         # Mock the method chain: find().sort().skip().limit()
-        mock_collection.find.return_value.sort.return_value.skip.return_value.limit.return_value = mock_cursor
+        mock_collection.find.return_value.sort.return_value.skip.return_value.limit.return_value = (
+            mock_cursor
+        )
 
         # Mock count_documents as async
         mock_collection.count_documents = mocker.AsyncMock(return_value=2)
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act
         result = await list_tasks(page=1, size=10, current_user=mock_user)
@@ -180,10 +189,10 @@ class TestListTasks(TestTaskBase):
         assert result.tasks[1].title == "Task 2"
 
         # Verify query parameters
-        mock_collection.find.assert_called_once_with(
-            {"user_id": 1, "deleted_at": None})
+        mock_collection.find.assert_called_once_with({"user_id": 1, "deleted_at": None})
         mock_collection.count_documents.assert_called_once_with(
-            {"user_id": 1, "deleted_at": None})
+            {"user_id": 1, "deleted_at": None}
+        )
 
     @pytest.mark.asyncio
     async def test_list_tasks_with_pagination(self, mocker, mock_user, mock_tasks_data):
@@ -193,13 +202,16 @@ class TestListTasks(TestTaskBase):
         mock_cursor.__aiter__.return_value = iter(mock_tasks_data[:1])
 
         # Mock the method chain: find().sort().skip().limit()
-        mock_collection.find.return_value.sort.return_value.skip.return_value.limit.return_value = mock_cursor
+        mock_collection.find.return_value.sort.return_value.skip.return_value.limit.return_value = (
+            mock_cursor
+        )
 
         # Mock count_documents as async
         mock_collection.count_documents = mocker.AsyncMock(return_value=5)
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act
         result = await list_tasks(page=2, size=1, current_user=mock_user)
@@ -210,14 +222,14 @@ class TestListTasks(TestTaskBase):
         assert result.total == 5
 
         # Verify method calls in the chain
-        mock_collection.find.assert_called_once_with(
-            {"user_id": 1, "deleted_at": None})
-        mock_collection.find.return_value.sort.assert_called_once_with(
-            "created_at", -1)
+        mock_collection.find.assert_called_once_with({"user_id": 1, "deleted_at": None})
+        mock_collection.find.return_value.sort.assert_called_once_with("created_at", -1)
         mock_collection.find.return_value.sort.return_value.skip.assert_called_once_with(
-            1)
+            1
+        )
         mock_collection.find.return_value.sort.return_value.skip.return_value.limit.assert_called_once_with(
-            1)
+            1
+        )
 
 
 class TestGetTask(TestTaskBase):
@@ -229,8 +241,9 @@ class TestGetTask(TestTaskBase):
         mock_collection = mocker.AsyncMock()
         mock_collection.find_one.return_value = mock_task_data
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act
         result = await get_task("507f1f77bcf86cd799439011", mock_user)
@@ -242,11 +255,13 @@ class TestGetTask(TestTaskBase):
         assert result.description == "Test Description"
 
         # Verify query
-        mock_collection.find_one.assert_called_once_with({
-            "_id": ObjectId("507f1f77bcf86cd799439011"),
-            "user_id": 1,
-            "deleted_at": None
-        })
+        mock_collection.find_one.assert_called_once_with(
+            {
+                "_id": ObjectId("507f1f77bcf86cd799439011"),
+                "user_id": 1,
+                "deleted_at": None,
+            }
+        )
 
     @pytest.mark.asyncio
     async def test_get_task_not_found(self, mocker, mock_user):
@@ -254,8 +269,9 @@ class TestGetTask(TestTaskBase):
         mock_collection = mocker.AsyncMock()
         mock_collection.find_one.return_value = None
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -269,13 +285,16 @@ class TestUpdateTask(TestTaskBase):
     """Test cases for update_task endpoint"""
 
     @pytest.mark.asyncio
-    async def test_update_task_success(self, mocker, mock_user, task_update, mock_updated_task, mock_now):
+    async def test_update_task_success(
+        self, mocker, mock_user, task_update, mock_updated_task, mock_now
+    ):
         # Arrange
         mock_collection = mocker.AsyncMock()
         mock_collection.find_one_and_update.return_value = mock_updated_task
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         id = ObjectId("507f1f77bcf86cd799439011")
         # Act
@@ -291,11 +310,7 @@ class TestUpdateTask(TestTaskBase):
         call_args = mock_collection.find_one_and_update.call_args
 
         # Check filter
-        expected_filter = {
-            "_id": id,
-            "user_id": 1,
-            "deleted_at": None
-        }
+        expected_filter = {"_id": id, "user_id": 1, "deleted_at": None}
         assert call_args[0][0] == expected_filter
 
         # Check update document
@@ -311,12 +326,15 @@ class TestUpdateTask(TestTaskBase):
         mock_collection = mocker.AsyncMock()
         mock_collection.find_one_and_update.return_value = None
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
-            await update_task(task_update, ObjectId("507f1f77bcf86cd799439011"), mock_user)
+            await update_task(
+                task_update, ObjectId("507f1f77bcf86cd799439011"), mock_user
+            )
 
         assert exc_info.value.status_code == 404
         assert exc_info.value.detail == "Task not found"
@@ -335,14 +353,15 @@ class TestUpdateTask(TestTaskBase):
             "created_at": datetime(2023, 1, 1, tzinfo=UTC),
             "completed_at": None,
             "updated_at": mock_now,
-            "deleted_at": None
+            "deleted_at": None,
         }
 
         mock_collection = mocker.AsyncMock()
         mock_collection.find_one_and_update.return_value = mock_updated_task
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act
         await update_task(task_update, ObjectId("507f1f77bcf86cd799439011"), mock_user)
@@ -363,8 +382,9 @@ class TestDeleteTask(TestTaskBase):
         mock_result.matched_count = 1
         mock_collection.update_one.return_value = mock_result
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act
         result = await delete_task("507f1f77bcf86cd799439011", mock_user)
@@ -379,7 +399,7 @@ class TestDeleteTask(TestTaskBase):
         expected_filter = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
             "user_id": 1,
-            "deleted_at": None
+            "deleted_at": None,
         }
         assert call_args[0][0] == expected_filter
         assert call_args[0][1]["$set"]["deleted_at"] == mock_now
@@ -392,8 +412,9 @@ class TestDeleteTask(TestTaskBase):
         mock_result.matched_count = 0
         mock_collection.update_one.return_value = mock_result
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -417,14 +438,15 @@ class TestMarkComplete(TestTaskBase):
             "created_at": datetime(2023, 1, 1, tzinfo=UTC),
             "updated_at": mock_now,
             "completed_at": mock_now,  # Changed to use mock_now
-            "deleted_at": None
+            "deleted_at": None,
         }
 
         mock_collection = mocker.AsyncMock()
         mock_collection.find_one_and_update.return_value = mock_completed_task
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act
         result = await mark_complete("507f1f77bcf86cd799439011", mock_user)
@@ -441,7 +463,7 @@ class TestMarkComplete(TestTaskBase):
         expected_filter = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
             "user_id": 1,
-            "deleted_at": None
+            "deleted_at": None,
         }
         assert call_args[0][0] == expected_filter
 
@@ -455,8 +477,9 @@ class TestMarkComplete(TestTaskBase):
         mock_collection = mocker.AsyncMock()
         mock_collection.find_one_and_update.return_value = None
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -470,13 +493,16 @@ class TestMarkUncomplete(TestTaskBase):
     """Test cases for mark_uncomplete endpoint"""
 
     @pytest.mark.asyncio
-    async def test_mark_uncomplete_success(self, mocker, mock_user, mock_uncompleted_task, mock_now):
+    async def test_mark_uncomplete_success(
+        self, mocker, mock_user, mock_uncompleted_task, mock_now
+    ):
         # Arrange
         mock_collection = mocker.AsyncMock()
         mock_collection.find_one_and_update.return_value = mock_uncompleted_task
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act
         result = await mark_uncomplete("507f1f77bcf86cd799439011", mock_user)
@@ -493,7 +519,7 @@ class TestMarkUncomplete(TestTaskBase):
         expected_filter = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
             "user_id": 1,
-            "deleted_at": None
+            "deleted_at": None,
         }
         assert call_args[0][0] == expected_filter
 
@@ -507,8 +533,9 @@ class TestMarkUncomplete(TestTaskBase):
         mock_collection = mocker.AsyncMock()
         mock_collection.find_one_and_update.return_value = None
 
-        mocker.patch('app.routers.tasks.get_tasks_collection',
-                     return_value=mock_collection)
+        mocker.patch(
+            "app.routers.tasks.get_tasks_collection", return_value=mock_collection
+        )
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:

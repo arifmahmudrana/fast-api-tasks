@@ -16,8 +16,7 @@ from tests.helpers.data_factories import TestDataFactory
 SQLALCHEMY_DATABASE_URL = os.environ["DATABASE_URL"]
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 pytestmark = pytest.mark.asyncio
 
@@ -74,17 +73,14 @@ class TestUserTaskIntegration:
         # User 1 creates a task
         task_data = TestDataFactory.create_task_data("User 1 Task")
         response = await client.post(
-            "/tasks/",
-            json=task_data,
-            headers=AuthHelper.get_auth_headers(user1_token)
+            "/tasks/", json=task_data, headers=AuthHelper.get_auth_headers(user1_token)
         )
         assert response.status_code == 201
         task_id = response.json()["_id"]
 
         # User 2 tries to access User 1's task
         response = await client.get(
-            f"/tasks/{task_id}",
-            headers=AuthHelper.get_auth_headers(user2_token)
+            f"/tasks/{task_id}", headers=AuthHelper.get_auth_headers(user2_token)
         )
         assert response.status_code == 404  # Should not find task
 

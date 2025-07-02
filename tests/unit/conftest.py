@@ -5,7 +5,7 @@ import os
 from unittest.mock import Mock
 
 # Mock the models and schemas modules at import time to avoid SQLAlchemy dependencies
-sys.modules['app.models'] = Mock()
+sys.modules["app.models"] = Mock()
 
 
 @pytest.fixture(scope="session", autouse=True)

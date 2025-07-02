@@ -17,15 +17,16 @@ def get_db():
         db.close()
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, crud.SECRET_KEY,
-                             algorithms=[crud.ALGORITHM])
+        payload = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
@@ -45,4 +46,5 @@ def get_object_id_or_404(param_name: str, description: str):
         if not ObjectId.is_valid(obj_id):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
         return ObjectId(obj_id)
+
     return dependency

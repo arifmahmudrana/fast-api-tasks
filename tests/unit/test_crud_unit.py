@@ -22,8 +22,7 @@ class TestCrudFunctions:
     def sample_user_create(self):
         """Sample user creation data"""
         return schemas.UserCreate(
-            email="test@example.com",
-            password="plaintext_password"
+            email="test@example.com", password="plaintext_password"
         )
 
     @pytest.fixture
@@ -105,10 +104,11 @@ class TestGetUserByEmail(TestCrudFunctions):
 class TestCreateUser(TestCrudFunctions):
     """Tests for create_user function"""
 
-    @patch('app.crud.pwd_context')
-    @patch('app.crud.models.User')
-    def test_create_user_success(self, mock_user_model, mock_pwd_context,
-                                 mock_db_session, sample_user_create):
+    @patch("app.crud.pwd_context")
+    @patch("app.crud.models.User")
+    def test_create_user_success(
+        self, mock_user_model, mock_pwd_context, mock_db_session, sample_user_create
+    ):
         """Test successful user creation"""
         # Arrange
         hashed_password = "$2b$12$hashedpassword"
@@ -124,25 +124,23 @@ class TestCreateUser(TestCrudFunctions):
 
         # Assert
         assert result == mock_db_user
-        mock_pwd_context.hash.assert_called_once_with(
-            sample_user_create.password)
+        mock_pwd_context.hash.assert_called_once_with(sample_user_create.password)
         mock_user_model.assert_called_once_with(
-            email=sample_user_create.email,
-            hashed_password=hashed_password
+            email=sample_user_create.email, hashed_password=hashed_password
         )
         mock_db_session.add.assert_called_once_with(mock_db_user)
         mock_db_session.commit.assert_called_once()
         mock_db_session.refresh.assert_called_once_with(mock_db_user)
 
-    @patch('app.crud.pwd_context')
-    @patch('app.crud.models.User')
-    def test_create_user_with_long_email(self, mock_user_model, mock_pwd_context,
-                                         mock_db_session):
+    @patch("app.crud.pwd_context")
+    @patch("app.crud.models.User")
+    def test_create_user_with_long_email(
+        self, mock_user_model, mock_pwd_context, mock_db_session
+    ):
         """Test user creation with long email"""
         # Arrange
         long_email = "a" * 50 + "@example.com"
-        user_data = schemas.UserCreate(
-            email=long_email, password="password123")
+        user_data = schemas.UserCreate(email=long_email, password="password123")
         hashed_password = "$2b$12$hashedpassword"
         mock_pwd_context.hash.return_value = hashed_password
 
@@ -156,14 +154,14 @@ class TestCreateUser(TestCrudFunctions):
         assert result == mock_db_user
         mock_pwd_context.hash.assert_called_once_with("password123")
         mock_user_model.assert_called_once_with(
-            email=long_email,
-            hashed_password=hashed_password
+            email=long_email, hashed_password=hashed_password
         )
 
-    @patch('app.crud.pwd_context')
-    @patch('app.crud.models.User')
-    def test_create_user_database_error(self, mock_user_model, mock_pwd_context,
-                                        mock_db_session, sample_user_create):
+    @patch("app.crud.pwd_context")
+    @patch("app.crud.models.User")
+    def test_create_user_database_error(
+        self, mock_user_model, mock_pwd_context, mock_db_session, sample_user_create
+    ):
         """Test user creation when database commit fails"""
         # Arrange
         hashed_password = "$2b$12$hashedpassword"
@@ -185,10 +183,11 @@ class TestCreateUser(TestCrudFunctions):
 class TestAuthenticateUser(TestCrudFunctions):
     """Tests for authenticate_user function"""
 
-    @patch('app.crud.get_user_by_email')
-    @patch('app.crud.pwd_context')
-    def test_authenticate_user_success(self, mock_pwd_context, mock_get_user,
-                                       mock_db_session, sample_db_user):
+    @patch("app.crud.get_user_by_email")
+    @patch("app.crud.pwd_context")
+    def test_authenticate_user_success(
+        self, mock_pwd_context, mock_get_user, mock_db_session, sample_db_user
+    ):
         """Test successful user authentication"""
         # Arrange
         email = "test@example.com"
@@ -206,10 +205,11 @@ class TestAuthenticateUser(TestCrudFunctions):
             password, sample_db_user.hashed_password
         )
 
-    @patch('app.crud.get_user_by_email')
-    @patch('app.crud.pwd_context')
-    def test_authenticate_user_wrong_password(self, mock_pwd_context, mock_get_user,
-                                              mock_db_session, sample_db_user):
+    @patch("app.crud.get_user_by_email")
+    @patch("app.crud.pwd_context")
+    def test_authenticate_user_wrong_password(
+        self, mock_pwd_context, mock_get_user, mock_db_session, sample_db_user
+    ):
         """Test authentication with wrong password"""
         # Arrange
         email = "test@example.com"
@@ -227,10 +227,11 @@ class TestAuthenticateUser(TestCrudFunctions):
             password, sample_db_user.hashed_password
         )
 
-    @patch('app.crud.get_user_by_email')
-    @patch('app.crud.pwd_context')
-    def test_authenticate_user_not_found(self, mock_pwd_context, mock_get_user,
-                                         mock_db_session):
+    @patch("app.crud.get_user_by_email")
+    @patch("app.crud.pwd_context")
+    def test_authenticate_user_not_found(
+        self, mock_pwd_context, mock_get_user, mock_db_session
+    ):
         """Test authentication when user doesn't exist"""
         # Arrange
         email = "nonexistent@example.com"
@@ -245,10 +246,11 @@ class TestAuthenticateUser(TestCrudFunctions):
         mock_get_user.assert_called_once_with(mock_db_session, email)
         mock_pwd_context.verify.assert_not_called()
 
-    @patch('app.crud.get_user_by_email')
-    @patch('app.crud.pwd_context')
-    def test_authenticate_user_empty_password(self, mock_pwd_context, mock_get_user,
-                                              mock_db_session, sample_db_user):
+    @patch("app.crud.get_user_by_email")
+    @patch("app.crud.pwd_context")
+    def test_authenticate_user_empty_password(
+        self, mock_pwd_context, mock_get_user, mock_db_session, sample_db_user
+    ):
         """Test authentication with empty password"""
         # Arrange
         email = "test@example.com"
@@ -262,7 +264,8 @@ class TestAuthenticateUser(TestCrudFunctions):
         # Assert
         assert result is False
         mock_pwd_context.verify.assert_called_once_with(
-            "", sample_db_user.hashed_password)
+            "", sample_db_user.hashed_password
+        )
 
 
 class TestCreateAccessToken(TestCrudFunctions):
@@ -281,8 +284,7 @@ class TestCreateAccessToken(TestCrudFunctions):
         assert len(token) > 0
 
         # Verify token can be decoded
-        decoded = jwt.decode(token, crud.SECRET_KEY,
-                             algorithms=[crud.ALGORITHM])
+        decoded = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
         assert decoded["sub"] == "test@example.com"
         assert decoded["user_id"] == 1
         assert "exp" in decoded
@@ -298,15 +300,16 @@ class TestCreateAccessToken(TestCrudFunctions):
         after_creation = datetime.now(UTC).timestamp()
 
         # Assert
-        decoded = jwt.decode(token, crud.SECRET_KEY,
-                             algorithms=[crud.ALGORITHM])
+        decoded = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
         token_exp = decoded["exp"]  # Get the raw timestamp
 
         # Token should expire after the configured minutes
-        expected_min_exp = before_creation + \
-            (crud.ACCESS_TOKEN_EXPIRE_MINUTES * 60) - 1  # -1 second buffer
-        expected_max_exp = after_creation + \
-            (crud.ACCESS_TOKEN_EXPIRE_MINUTES * 60) + 1  # +1 second buffer
+        expected_min_exp = (
+            before_creation + (crud.ACCESS_TOKEN_EXPIRE_MINUTES * 60) - 1
+        )  # -1 second buffer
+        expected_max_exp = (
+            after_creation + (crud.ACCESS_TOKEN_EXPIRE_MINUTES * 60) + 1
+        )  # +1 second buffer
 
         assert expected_min_exp <= token_exp <= expected_max_exp
 
@@ -320,8 +323,7 @@ class TestCreateAccessToken(TestCrudFunctions):
 
         # Assert
         assert token is not None
-        decoded = jwt.decode(token, crud.SECRET_KEY,
-                             algorithms=[crud.ALGORITHM])
+        decoded = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
         assert "exp" in decoded
 
     def test_create_access_token_with_multiple_claims(self):
@@ -331,15 +333,14 @@ class TestCreateAccessToken(TestCrudFunctions):
             "sub": "test@example.com",
             "user_id": 123,
             "role": "admin",
-            "permissions": ["read", "write"]
+            "permissions": ["read", "write"],
         }
 
         # Act
         token = crud.create_access_token(test_data)
 
         # Assert
-        decoded = jwt.decode(token, crud.SECRET_KEY,
-                             algorithms=[crud.ALGORITHM])
+        decoded = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
         assert decoded["sub"] == "test@example.com"
         assert decoded["user_id"] == 123
         assert decoded["role"] == "admin"
@@ -359,7 +360,7 @@ class TestCreateAccessToken(TestCrudFunctions):
         assert original_data == data_copy
         assert "exp" not in original_data
 
-    @patch('app.crud.datetime')
+    @patch("app.crud.datetime")
     def test_create_access_token_uses_utc_time(self, mock_datetime):
         """Test that token creation uses UTC time"""
         # Arrange
@@ -377,13 +378,15 @@ class TestCreateAccessToken(TestCrudFunctions):
         mock_datetime.now.assert_called_once_with(UTC)
 
         # Mock datetime for jwt.decode to avoid expiration check
-        with patch('jose.jwt.datetime') as mock_jwt_datetime:
+        with patch("jose.jwt.datetime") as mock_jwt_datetime:
             mock_jwt_datetime.now.return_value = fixed_utc_time
-            decoded = jwt.decode(token, crud.SECRET_KEY,
-                                 algorithms=[crud.ALGORITHM])
+            decoded = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
 
-            expected_exp = int((
-                fixed_utc_time + timedelta(minutes=crud.ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp())
+            expected_exp = int(
+                (
+                    fixed_utc_time + timedelta(minutes=crud.ACCESS_TOKEN_EXPIRE_MINUTES)
+                ).timestamp()
+            )
             assert decoded["exp"] == expected_exp
 
     def test_create_access_token_with_special_characters(self):
@@ -392,15 +395,14 @@ class TestCreateAccessToken(TestCrudFunctions):
         test_data = {
             "sub": "test+tag@example-domain.co.uk",
             "name": "José María",
-            "description": "User with émojis 🚀 and spéciał chars"
+            "description": "User with émojis 🚀 and spéciał chars",
         }
 
         # Act
         token = crud.create_access_token(test_data)
 
         # Assert
-        decoded = jwt.decode(token, crud.SECRET_KEY,
-                             algorithms=[crud.ALGORITHM])
+        decoded = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
         assert decoded["sub"] == "test+tag@example-domain.co.uk"
         assert decoded["name"] == "José María"
         assert decoded["description"] == "User with émojis 🚀 and spéciał chars"
@@ -410,6 +412,7 @@ class TestCreateAccessToken(TestCrudFunctions):
         """Test token creation with custom expiration time"""
         # Need to reload to pick up new environment variable
         import importlib
+
         importlib.reload(crud)
 
         # Arrange
@@ -420,8 +423,7 @@ class TestCreateAccessToken(TestCrudFunctions):
         token = crud.create_access_token(test_data)
 
         # Assert
-        decoded = jwt.decode(token, crud.SECRET_KEY,
-                             algorithms=[crud.ALGORITHM])
+        decoded = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
         token_exp = datetime.fromtimestamp(decoded["exp"], UTC)
         expected_exp = before_creation + timedelta(minutes=60)
 
@@ -485,19 +487,23 @@ class TestEnvironmentVariables(TestCrudFunctions):
         assert crud.ACCESS_TOKEN_EXPIRE_MINUTES is not None
         assert isinstance(crud.ACCESS_TOKEN_EXPIRE_MINUTES, int)
 
-    @patch.dict(os.environ, {
-        'SECRET_KEY': 'test_secret',
-        'ALGORITHM': 'HS512',
-        'ACCESS_TOKEN_EXPIRE_MINUTES': '60'
-    })
+    @patch.dict(
+        os.environ,
+        {
+            "SECRET_KEY": "test_secret",
+            "ALGORITHM": "HS512",
+            "ACCESS_TOKEN_EXPIRE_MINUTES": "60",
+        },
+    )
     def test_environment_variable_override(self):
         """Test that environment variables override defaults"""
         # Need to reimport to get new environment values
         import importlib
+
         importlib.reload(crud)
 
-        assert crud.SECRET_KEY == 'test_secret'
-        assert crud.ALGORITHM == 'HS512'
+        assert crud.SECRET_KEY == "test_secret"
+        assert crud.ALGORITHM == "HS512"
         assert crud.ACCESS_TOKEN_EXPIRE_MINUTES == 60
 
 
@@ -505,10 +511,11 @@ class TestEnvironmentVariables(TestCrudFunctions):
 class TestCrudIntegration(TestCrudFunctions):
     """Integration tests that test multiple functions together"""
 
-    @patch('app.crud.pwd_context')
-    @patch('app.crud.models.User')
-    def test_create_and_authenticate_user_flow(self, mock_user_model, mock_pwd_context,
-                                               mock_db_session):
+    @patch("app.crud.pwd_context")
+    @patch("app.crud.models.User")
+    def test_create_and_authenticate_user_flow(
+        self, mock_user_model, mock_pwd_context, mock_db_session
+    ):
         """Test the complete flow of creating and then authenticating a user"""
         # Arrange
         email = "integration@example.com"
@@ -536,15 +543,13 @@ class TestCrudIntegration(TestCrudFunctions):
         created_user = crud.create_user(mock_db_session, user_create)
 
         # Act - Authenticate user
-        authenticated_user = crud.authenticate_user(
-            mock_db_session, email, password)
+        authenticated_user = crud.authenticate_user(mock_db_session, email, password)
 
         # Assert
         assert created_user == mock_db_user
         assert authenticated_user == mock_db_user
         mock_pwd_context.hash.assert_called_once_with(password)
-        mock_pwd_context.verify.assert_called_once_with(
-            password, hashed_password)
+        mock_pwd_context.verify.assert_called_once_with(password, hashed_password)
 
 
 if __name__ == "__main__":

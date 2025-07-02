@@ -1,3 +1,4 @@
+# app/mongo.py
 from typing import Optional
 from pymongo import AsyncMongoClient, ASCENDING, DESCENDING
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
@@ -29,11 +30,11 @@ async def connect_to_mongo():
             connectTimeoutMS=5000,
             socketTimeoutMS=5000,
             maxPoolSize=10,
-            retryWrites=True
+            retryWrites=True,
         )
 
         # Test the connection
-        await mongo_client.admin.command('ping')
+        await mongo_client.admin.command("ping")
         print("Successfully connected to MongoDB")
 
         # Initialize database and collections
@@ -73,10 +74,9 @@ async def ensure_indexes():
         await tasks_collection.create_index([("completed_at", DESCENDING)])
 
         # Compound index for efficient queries
-        await tasks_collection.create_index([
-            ("user_id", ASCENDING),
-            ("deleted_at", ASCENDING)
-        ])
+        await tasks_collection.create_index(
+            [("user_id", ASCENDING), ("deleted_at", ASCENDING)]
+        )
 
         print("MongoDB indexes created successfully")
     except Exception as e:
@@ -88,5 +88,6 @@ def get_tasks_collection():
     """Get tasks collection with error handling"""
     if tasks_collection is None:
         raise RuntimeError(
-            "Tasks collection not initialized. Make sure MongoDB connection is established.")
+            "Tasks collection not initialized. Make sure MongoDB connection is established."
+        )
     return tasks_collection

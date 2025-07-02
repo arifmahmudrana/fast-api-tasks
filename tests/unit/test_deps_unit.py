@@ -16,7 +16,7 @@ TEST_PAYLOAD = {"sub": TEST_EMAIL}
 
 def test_get_db(mocker):
     # Mock the database session
-    mock_session_local = mocker.patch('app.database.SessionLocal')
+    mock_session_local = mocker.patch("app.database.SessionLocal")
     mock_db = mocker.MagicMock()
     mock_session_local.return_value = mock_db
 
@@ -36,14 +36,13 @@ def test_get_db(mocker):
 
 def test_get_current_user_valid_token(mocker):
     # Setup mocks
-    mocker.patch.object(crud, 'SECRET_KEY', TEST_SECRET_KEY)
-    mocker.patch.object(crud, 'ALGORITHM', TEST_ALGORITHM)
+    mocker.patch.object(crud, "SECRET_KEY", TEST_SECRET_KEY)
+    mocker.patch.object(crud, "ALGORITHM", TEST_ALGORITHM)
 
     # Patch the jwt.decode call WHERE IT'S USED (in deps.py)
-    mock_jwt_decode = mocker.patch(
-        'app.deps.jwt.decode', return_value=TEST_PAYLOAD)
+    mock_jwt_decode = mocker.patch("app.deps.jwt.decode", return_value=TEST_PAYLOAD)
 
-    mock_get_user = mocker.patch('app.crud.get_user_by_email')
+    mock_get_user = mocker.patch("app.crud.get_user_by_email")
     mock_user = mocker.MagicMock()
     mock_get_user.return_value = mock_user
 
@@ -63,10 +62,10 @@ def test_get_current_user_valid_token(mocker):
 
 def test_get_current_user_invalid_token(mocker):
     # Setup mocks
-    mocker.patch.object(crud, 'SECRET_KEY', TEST_SECRET_KEY)
-    mocker.patch.object(crud, 'ALGORITHM', TEST_ALGORITHM)
+    mocker.patch.object(crud, "SECRET_KEY", TEST_SECRET_KEY)
+    mocker.patch.object(crud, "ALGORITHM", TEST_ALGORITHM)
 
-    mocker.patch('app.deps.jwt.decode', side_effect=JWTError("Invalid token"))
+    mocker.patch("app.deps.jwt.decode", side_effect=JWTError("Invalid token"))
 
     # Mock DB dependency
     mock_db = mocker.MagicMock()
@@ -80,10 +79,10 @@ def test_get_current_user_invalid_token(mocker):
 
 def test_get_current_user_missing_email(mocker):
     # Setup mocks
-    mocker.patch.object(crud, 'SECRET_KEY', TEST_SECRET_KEY)
-    mocker.patch.object(crud, 'ALGORITHM', TEST_ALGORITHM)
+    mocker.patch.object(crud, "SECRET_KEY", TEST_SECRET_KEY)
+    mocker.patch.object(crud, "ALGORITHM", TEST_ALGORITHM)
 
-    mocker.patch('app.deps.jwt.decode', return_value={"sub": None})
+    mocker.patch("app.deps.jwt.decode", return_value={"sub": None})
 
     # Mock DB dependency
     mock_db = mocker.MagicMock()
@@ -97,11 +96,11 @@ def test_get_current_user_missing_email(mocker):
 
 def test_get_current_user_nonexistent_user(mocker):
     # Setup mocks
-    mocker.patch.object(crud, 'SECRET_KEY', TEST_SECRET_KEY)
-    mocker.patch.object(crud, 'ALGORITHM', TEST_ALGORITHM)
+    mocker.patch.object(crud, "SECRET_KEY", TEST_SECRET_KEY)
+    mocker.patch.object(crud, "ALGORITHM", TEST_ALGORITHM)
 
-    mocker.patch('app.deps.jwt.decode', return_value=TEST_PAYLOAD)
-    mocker.patch('app.crud.get_user_by_email', return_value=None)
+    mocker.patch("app.deps.jwt.decode", return_value=TEST_PAYLOAD)
+    mocker.patch("app.crud.get_user_by_email", return_value=None)
 
     # Mock DB dependency
     mock_db = mocker.MagicMock()
@@ -148,6 +147,7 @@ def test_get_object_id_or_404_with_path_parameters(mocker):
 
     # Inspect the function's parameters
     import inspect
+
     sig = inspect.signature(dependency_func)
     param = sig.parameters["obj_id"]
 

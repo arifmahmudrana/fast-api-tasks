@@ -13,8 +13,7 @@ from app.deps import get_db
 SQLALCHEMY_DATABASE_URL = os.environ["DATABASE_URL"]
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 # --- Fixtures ---
@@ -33,6 +32,7 @@ def db_session():
 def client(db_session):
     def override_get_db():
         yield db_session  # Reuse the same session; don't close it here
+
     app.dependency_overrides[get_db] = override_get_db
 
     with TestClient(app) as c:
@@ -41,11 +41,11 @@ def client(db_session):
 
 # --- Integration tests ---
 
+
 def test_register_user(client):
     response = client.post(
         "/users/register",
-        json={"email": "integration@example.com",
-              "password": "integrationpass"}
+        json={"email": "integration@example.com", "password": "integrationpass"},
     )
     assert response.status_code in (200, 400), response.text
 
@@ -53,8 +53,7 @@ def test_register_user(client):
 def test_register_and_login(client):
     # Register user
     response = client.post(
-        "/users/register",
-        json={"email": "test@example.com", "password": "testpass"}
+        "/users/register", json={"email": "test@example.com", "password": "testpass"}
     )
     assert response.status_code in (200, 400), response.text
 
@@ -66,7 +65,7 @@ def test_register_and_login(client):
     response = client.post(
         "/users/token",
         data={"username": "test@example.com", "password": "testpass"},
-        headers={"Content-Type": "application/x-www-form-urlencoded"}
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
     assert response.status_code in (200, 401), response.text
 

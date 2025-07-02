@@ -15,8 +15,7 @@ from tests.helpers.data_factories import TestDataFactory
 SQLALCHEMY_DATABASE_URL = os.environ["DATABASE_URL"]
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 pytestmark = pytest.mark.asyncio
 
@@ -58,14 +57,15 @@ class TestUserJourneyE2E:
         user_data = AuthHelper.create_user_data()
         register_response = await client.post("/users/register", json=user_data)
         assert register_response.status_code in (
-            200, 400), f"Registration failed: {register_response.text}"
+            200,
+            400,
+        ), f"Registration failed: {register_response.text}"
 
         # 2. Login and get token
         token_response = await client.post(
             "/users/token",
-            data={"username": user_data["email"],
-                  "password": user_data["password"]},
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": user_data["email"], "password": user_data["password"]},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert token_response.status_code == 200, f"Login failed: {token_response.text}"
         token = token_response.json()["access_token"]
@@ -81,8 +81,11 @@ class TestUserJourneyE2E:
 
         # 4. Update first task
         update_data = TestDataFactory.create_task_update_data(
-            title="Updated Journey Task 1")
-        response = await client.put(f"/tasks/{task_ids[0]}", json=update_data, headers=headers)
+            title="Updated Journey Task 1"
+        )
+        response = await client.put(
+            f"/tasks/{task_ids[0]}", json=update_data, headers=headers
+        )
         assert response.status_code == 200
         assert response.json()["title"] == "Updated Journey Task 1"
 
@@ -123,9 +126,8 @@ class TestUserJourneyE2E:
         # 2. Simulate returning user (new session)
         token_response = await client.post(
             "/users/token",
-            data={"username": user_data["email"],
-                  "password": user_data["password"]},
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": user_data["email"], "password": user_data["password"]},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert token_response.status_code == 200
         token = token_response.json()["access_token"]
@@ -140,7 +142,9 @@ class TestUserJourneyE2E:
         # 4. Continue task operations
         # Complete all tasks
         for task in tasks:
-            response = await client.post(f"/tasks/{task['_id']}/complete", headers=headers)
+            response = await client.post(
+                f"/tasks/{task['_id']}/complete", headers=headers
+            )
             assert response.status_code == 200
 
         # Verify all tasks are completed
@@ -164,26 +168,25 @@ class TestUserJourneyE2E:
         # 2. Session 2: Login and modify tasks
         token_response = await client.post(
             "/users/token",
-            data={"username": user_data["email"],
-                  "password": user_data["password"]},
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": user_data["email"], "password": user_data["password"]},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert token_response.status_code == 200
         token2 = token_response.json()["access_token"]
         headers2 = AuthHelper.get_auth_headers(token2)
 
         # Modify task in second session
-        update_data = TestDataFactory.create_task_update_data(
-            title="Session 2 Update")
-        response = await client.put(f"/tasks/{task_id}", json=update_data, headers=headers2)
+        update_data = TestDataFactory.create_task_update_data(title="Session 2 Update")
+        response = await client.put(
+            f"/tasks/{task_id}", json=update_data, headers=headers2
+        )
         assert response.status_code == 200
 
         # 3. Session 3: Login and complete tasks
         token_response = await client.post(
             "/users/token",
-            data={"username": user_data["email"],
-                  "password": user_data["password"]},
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": user_data["email"], "password": user_data["password"]},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert token_response.status_code == 200
         token3 = token_response.json()["access_token"]

@@ -22,6 +22,7 @@ class TestGetTasksCollection(TestMongoFunctions):
         mock_collection = MagicMock()
 
         import app.mongo
+
         app.mongo.tasks_collection = mock_collection
 
         result = get_tasks_collection()
@@ -30,6 +31,7 @@ class TestGetTasksCollection(TestMongoFunctions):
     def test_get_tasks_collection_uninitialized(self):
         """Test error when collection not initialized"""
         import app.mongo
+
         app.mongo.tasks_collection = None
 
         with pytest.raises(RuntimeError, match="not initialized"):
@@ -43,6 +45,7 @@ class TestEnsureIndexes(TestMongoFunctions):
     async def test_ensure_indexes_return_if_tasks_collection_is_none(self, capsys):
         """Test index creation when collection is not initialized"""
         import app.mongo
+
         app.mongo.tasks_collection = None
 
         await ensure_indexes()
@@ -60,8 +63,7 @@ class TestEnsureIndexes(TestMongoFunctions):
         app.mongo.tasks_collection = mock_collection
 
         # Raise exception immediately
-        mock_collection.create_index.side_effect = Exception(
-            "Index creation failed")
+        mock_collection.create_index.side_effect = Exception("Index creation failed")
 
         await ensure_indexes()
 
@@ -102,11 +104,10 @@ class TestEnsureIndexes(TestMongoFunctions):
             mocker.call([("updated_at", DESCENDING)]),
             mocker.call([("deleted_at", DESCENDING)]),
             mocker.call([("completed_at", DESCENDING)]),
-            mocker.call([("user_id", ASCENDING), ("deleted_at", ASCENDING)])
+            mocker.call([("user_id", ASCENDING), ("deleted_at", ASCENDING)]),
         ]
 
-        mock_collection.create_index.assert_has_calls(
-            expected_calls, any_order=False)
+        mock_collection.create_index.assert_has_calls(expected_calls, any_order=False)
 
 
 class TestConnectToMongo(TestMongoFunctions):
@@ -129,8 +130,7 @@ class TestConnectToMongo(TestMongoFunctions):
 
         # Mock the AsyncMongoClient constructor
         mock_async_mongo_client = mocker.patch(
-            'app.mongo.AsyncMongoClient',
-            return_value=mock_client
+            "app.mongo.AsyncMongoClient", return_value=mock_client
         )
 
         # Execute the function
@@ -148,11 +148,11 @@ class TestConnectToMongo(TestMongoFunctions):
             connectTimeoutMS=5000,
             socketTimeoutMS=5000,
             maxPoolSize=10,
-            retryWrites=True
+            retryWrites=True,
         )
 
         # Verify ping command was called
-        mock_client.admin.command.assert_called_once_with('ping')
+        mock_client.admin.command.assert_called_once_with("ping")
 
         # Verify global variables were set
         assert app.mongo.mongo_client == mock_client
@@ -170,10 +170,9 @@ class TestConnectToMongo(TestMongoFunctions):
 
         # Mock AsyncMongoClient to raise ConnectionFailure
         mock_client = mocker.AsyncMock()
-        mock_client.admin.command.side_effect = ConnectionFailure(
-            "Connection refused")
+        mock_client.admin.command.side_effect = ConnectionFailure("Connection refused")
 
-        mocker.patch('app.mongo.AsyncMongoClient', return_value=mock_client)
+        mocker.patch("app.mongo.AsyncMongoClient", return_value=mock_client)
 
         # Test that ConnectionFailure is raised
         with pytest.raises(ConnectionFailure, match="Connection refused"):
@@ -186,7 +185,7 @@ class TestConnectToMongo(TestMongoFunctions):
         assert "Make sure MongoDB is running and accessible" in captured.out
 
         # Verify ping was attempted
-        mock_client.admin.command.assert_called_once_with('ping')
+        mock_client.admin.command.assert_called_once_with("ping")
 
     @pytest.mark.asyncio
     async def test_connect_to_mongo_server_selection_timeout(self, mocker, capsys):
@@ -196,12 +195,15 @@ class TestConnectToMongo(TestMongoFunctions):
         # Mock AsyncMongoClient to raise ServerSelectionTimeoutError
         mock_client = mocker.AsyncMock()
         mock_client.admin.command.side_effect = ServerSelectionTimeoutError(
-            "Server selection timeout")
+            "Server selection timeout"
+        )
 
-        mocker.patch('app.mongo.AsyncMongoClient', return_value=mock_client)
+        mocker.patch("app.mongo.AsyncMongoClient", return_value=mock_client)
 
         # Test that ServerSelectionTimeoutError is raised
-        with pytest.raises(ServerSelectionTimeoutError, match="Server selection timeout"):
+        with pytest.raises(
+            ServerSelectionTimeoutError, match="Server selection timeout"
+        ):
             await connect_to_mongo()
 
         # Verify console output
@@ -219,7 +221,7 @@ class TestConnectToMongo(TestMongoFunctions):
         mock_client = mocker.AsyncMock()
         mock_client.admin.command.side_effect = ValueError("Unexpected error")
 
-        mocker.patch('app.mongo.AsyncMongoClient', return_value=mock_client)
+        mocker.patch("app.mongo.AsyncMongoClient", return_value=mock_client)
 
         # Test that ValueError is raised
         with pytest.raises(ValueError, match="Unexpected error"):
@@ -228,7 +230,9 @@ class TestConnectToMongo(TestMongoFunctions):
         # Verify console output
         captured = capsys.readouterr()
         assert f"Connecting to MongoDB at {app.mongo.MONGODB_URL}" in captured.out
-        assert "Unexpected error connecting to MongoDB: Unexpected error" in captured.out
+        assert (
+            "Unexpected error connecting to MongoDB: Unexpected error" in captured.out
+        )
 
     @pytest.mark.asyncio
     async def test_connect_to_mongo_client_creation_failure(self, mocker, capsys):
@@ -237,8 +241,8 @@ class TestConnectToMongo(TestMongoFunctions):
 
         # Mock AsyncMongoClient constructor to raise exception
         mocker.patch(
-            'app.mongo.AsyncMongoClient',
-            side_effect=ConnectionFailure("Failed to create client")
+            "app.mongo.AsyncMongoClient",
+            side_effect=ConnectionFailure("Failed to create client"),
         )
 
         # Test that ConnectionFailure is raised
@@ -251,7 +255,9 @@ class TestConnectToMongo(TestMongoFunctions):
         assert "Failed to connect to MongoDB: Failed to create client" in captured.out
 
     @pytest.mark.asyncio
-    async def test_connect_to_mongo_ping_failure_with_different_error(self, mocker, capsys):
+    async def test_connect_to_mongo_ping_failure_with_different_error(
+        self, mocker, capsys
+    ):
         """Test ping command failure with different error type"""
         import app.mongo
 
@@ -259,9 +265,10 @@ class TestConnectToMongo(TestMongoFunctions):
         mock_client = mocker.AsyncMock()
         # Make ping raise a different connection-related error
         mock_client.admin.command.side_effect = ServerSelectionTimeoutError(
-            "No servers available")
+            "No servers available"
+        )
 
-        mocker.patch('app.mongo.AsyncMongoClient', return_value=mock_client)
+        mocker.patch("app.mongo.AsyncMongoClient", return_value=mock_client)
 
         # Test that ServerSelectionTimeoutError is raised
         with pytest.raises(ServerSelectionTimeoutError, match="No servers available"):
@@ -274,7 +281,9 @@ class TestConnectToMongo(TestMongoFunctions):
         assert "Make sure MongoDB is running and accessible" in captured.out
 
     @pytest.mark.asyncio
-    async def test_connect_to_mongo_globals_not_set_on_ping_failure(self, mocker, capsys):
+    async def test_connect_to_mongo_globals_not_set_on_ping_failure(
+        self, mocker, capsys
+    ):
         """Test that global variables are not set when ping command fails"""
         import app.mongo
 
@@ -284,9 +293,8 @@ class TestConnectToMongo(TestMongoFunctions):
 
         # Mock AsyncMongoClient to fail
         mock_client = mocker.AsyncMock()
-        mock_client.admin.command.side_effect = ConnectionFailure(
-            "Connection failed")
-        mocker.patch('app.mongo.AsyncMongoClient', return_value=mock_client)
+        mock_client.admin.command.side_effect = ConnectionFailure("Connection failed")
+        mocker.patch("app.mongo.AsyncMongoClient", return_value=mock_client)
 
         # Test connection failure
         with pytest.raises(ConnectionFailure):
@@ -310,8 +318,8 @@ class TestConnectToMongo(TestMongoFunctions):
 
         # Mock AsyncMongoClient constructor to raise exception immediately
         mocker.patch(
-            'app.mongo.AsyncMongoClient',
-            side_effect=ConnectionFailure("Connection failed")
+            "app.mongo.AsyncMongoClient",
+            side_effect=ConnectionFailure("Connection failed"),
         )
 
         # Test connection failure
@@ -324,7 +332,9 @@ class TestConnectToMongo(TestMongoFunctions):
         assert app.mongo.tasks_collection == original_collection
 
     @pytest.mark.asyncio
-    async def test_connect_to_mongo_database_and_collection_assignment(self, mocker, capsys):
+    async def test_connect_to_mongo_database_and_collection_assignment(
+        self, mocker, capsys
+    ):
         """Test detailed verification of database and collection assignment"""
         import app.mongo
 
@@ -350,7 +360,7 @@ class TestConnectToMongo(TestMongoFunctions):
         mock_client.__getitem__.side_effect = mock_getitem_client
         mock_db.__getitem__.side_effect = mock_getitem_db
 
-        mocker.patch('app.mongo.AsyncMongoClient', return_value=mock_client)
+        mocker.patch("app.mongo.AsyncMongoClient", return_value=mock_client)
 
         # Execute function
         await connect_to_mongo()

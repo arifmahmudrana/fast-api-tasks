@@ -10,13 +10,11 @@ def init_db():
     SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
     if not SQLALCHEMY_DATABASE_URL:
-        raise ValueError(
-            "DATABASE_URL environment variable is not set or is empty")
+        raise ValueError("DATABASE_URL environment variable is not set or is empty")
 
     try:
         engine = create_engine(SQLALCHEMY_DATABASE_URL)
-        SessionLocal = sessionmaker(
-            autocommit=False, autoflush=False, bind=engine)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         Base = declarative_base()
         return engine, SessionLocal, Base
     except Exception as e:

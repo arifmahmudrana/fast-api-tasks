@@ -1,3 +1,4 @@
+# app/main.py
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.routers import users, tasks
@@ -12,6 +13,7 @@ async def lifespan(app: FastAPI):
     yield
     await disconnect_from_mongo()
     print("Application shutdown")
+
 
 app = FastAPI(lifespan=lifespan)
 

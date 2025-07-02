@@ -16,8 +16,7 @@ from tests.helpers.data_factories import TestDataFactory
 SQLALCHEMY_DATABASE_URL = os.environ["DATABASE_URL"]
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 pytestmark = pytest.mark.asyncio
 
@@ -58,9 +57,8 @@ class TestErrorHandlingE2E:
         # 1. Invalid credentials
         response = await client.post(
             "/users/token",
-            data={"username": "nonexistent@example.com",
-                  "password": "wrongpass"},
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": "nonexistent@example.com", "password": "wrongpass"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert response.status_code == 401
 
@@ -82,34 +80,31 @@ class TestErrorHandlingE2E:
         # User 1 creates a task
         task_data = TestDataFactory.create_task_data()
         response = await client.post(
-            "/tasks/",
-            json=task_data,
-            headers=AuthHelper.get_auth_headers(user1_token)
+            "/tasks/", json=task_data, headers=AuthHelper.get_auth_headers(user1_token)
         )
         assert response.status_code == 201
         task_id = response.json()["_id"]
 
         # User 2 tries to access User 1's task
         response = await client.get(
-            f"/tasks/{task_id}",
-            headers=AuthHelper.get_auth_headers(user2_token)
+            f"/tasks/{task_id}", headers=AuthHelper.get_auth_headers(user2_token)
         )
         assert response.status_code == 404
 
         # User 2 tries to update User 1's task
         update_data = TestDataFactory.create_task_update_data(
-            title="Unauthorized Update")
+            title="Unauthorized Update"
+        )
         response = await client.put(
             f"/tasks/{task_id}",
             json=update_data,
-            headers=AuthHelper.get_auth_headers(user2_token)
+            headers=AuthHelper.get_auth_headers(user2_token),
         )
         assert response.status_code == 404
 
         # User 2 tries to delete User 1's task
         response = await client.delete(
-            f"/tasks/{task_id}",
-            headers=AuthHelper.get_auth_headers(user2_token)
+            f"/tasks/{task_id}", headers=AuthHelper.get_auth_headers(user2_token)
         )
         assert response.status_code == 404
 
@@ -133,11 +128,15 @@ class TestErrorHandlingE2E:
         title = json_response["title"]
 
         invalid_update = {"title": ""}  # Empty title won't allowed
-        response = await client.put(f"/tasks/{task_id}", json=invalid_update, headers=headers)
+        response = await client.put(
+            f"/tasks/{task_id}", json=invalid_update, headers=headers
+        )
         assert response.status_code == 422
 
         invalid_update = {"title": None}  # None title won't update title
-        response = await client.put(f"/tasks/{task_id}", json=invalid_update, headers=headers)
+        response = await client.put(
+            f"/tasks/{task_id}", json=invalid_update, headers=headers
+        )
         assert response.status_code == 200
         assert response.json()["title"] == title
 
@@ -171,7 +170,9 @@ class TestErrorHandlingE2E:
 
         # 6. Update non-existent task
         update_data = TestDataFactory.create_task_update_data(title="Update")
-        response = await client.put(f"/tasks/{fake_id}", json=update_data, headers=headers)
+        response = await client.put(
+            f"/tasks/{fake_id}", json=update_data, headers=headers
+        )
         assert response.status_code == 404
 
         # 7. Delete non-existent task

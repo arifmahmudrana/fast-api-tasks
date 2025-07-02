@@ -16,8 +16,7 @@ from tests.helpers.data_factories import TestDataFactory
 SQLALCHEMY_DATABASE_URL = os.environ["DATABASE_URL"]
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 pytestmark = pytest.mark.asyncio
 
@@ -70,9 +69,10 @@ class TestTaskWorkflowIntegration:
         assert response.json()["title"] == task_data["title"]
 
         # 3. Update task
-        update_data = TestDataFactory.create_task_update_data(
-            title="Updated Task")
-        response = await client.put(f"/tasks/{task_id}", json=update_data, headers=headers)
+        update_data = TestDataFactory.create_task_update_data(title="Updated Task")
+        response = await client.put(
+            f"/tasks/{task_id}", json=update_data, headers=headers
+        )
         assert response.status_code == 200
         assert response.json()["title"] == "Updated Task"
 
@@ -109,7 +109,9 @@ class TestTaskWorkflowIntegration:
 
         # Complete some tasks
         for task in created_tasks[:2]:
-            response = await client.post(f"/tasks/{task['_id']}/complete", headers=headers)
+            response = await client.post(
+                f"/tasks/{task['_id']}/complete", headers=headers
+            )
             assert response.status_code == 200
 
         # Test pagination
